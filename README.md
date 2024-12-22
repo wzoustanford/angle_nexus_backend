@@ -10,7 +10,12 @@ code base for angle
 python -m venv env
 # OR
 python3 -m venv env
+# THEN
+
+source env/bin/activate
+
 ```
+python test_build_dataset.py -wi 2 -ns 4 
 
 2. Install dependencies
 
