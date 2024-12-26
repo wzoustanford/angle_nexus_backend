@@ -1,0 +1,5 @@
+<svg id="Employee" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <path id="Shape" d="M0,0H24V24H0Z" fill="none" fill-rule="evenodd"/>
+  <path id="Mask" d="M12,11a4,4,0,1,1,4-4A4,4,0,0,1,12,11Z" fill="#fff" opacity="0.3"/>
+  <path id="Mask-Copy" d="M3,20.2c.388-4.773,4.261-7.2,8.983-7.2C16.771,13,20.7,15.293,21,20.2a.687.687,0,0,1-.751.8H3.728A1.107,1.107,0,0,1,3,20.2Z" fill="#fff"/>
+</svg>

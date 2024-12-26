@@ -1,0 +1,5 @@
+<svg id="Angle-double-up" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <path id="Shape" d="M0,0H24V24H0Z" fill="none" fill-rule="evenodd"/>
+  <path id="Path-94" d="M8.293-10.207a1,1,0,0,0,0,1.414,1,1,0,0,0,1.414,0l6-6a1,1,0,0,0,.03-1.383l-5.5-6a1,1,0,0,0-1.413-.061,1,1,0,0,0-.061,1.413l4.853,5.294Z" transform="translate(27.5 27.5) rotate(-90)" fill="#fff"/>
+  <path id="Path-94-2" data-name="Path-94" d="M6.707-12.207a1,1,0,0,0-1.414,0,1,1,0,0,0,0,1.414l6,6a1,1,0,0,0,1.383.03l6-5.5a1,1,0,0,0,.061-1.413,1,1,0,0,0-1.413-.061L12.03-6.884Z" transform="translate(24) rotate(180)" fill="#fff" opacity="0.3"/>
+</svg>

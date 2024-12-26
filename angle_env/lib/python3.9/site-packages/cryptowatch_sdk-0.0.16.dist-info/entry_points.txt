@@ -1,0 +1,3 @@
+[console_scripts]
+cryptowatch = cryptowatch.__main__:main
+
