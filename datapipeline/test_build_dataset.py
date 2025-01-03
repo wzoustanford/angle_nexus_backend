@@ -1,3 +1,15 @@
+import os
+from dotenv import load_dotenv
+
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+# Construct the path to the .env file in the parent directory
+dotenv_path = os.path.join(script_dir, '../.env')
+
+# Load the .env file
+load_dotenv(dotenv_path=dotenv_path)
+
 import argparse
 from build_dataset import BuildDataset 
 from ticker_list import TICKERS 

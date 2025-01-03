@@ -20,6 +20,10 @@ from dateutil.relativedelta import relativedelta
 # Load environment variables from the .env file
 load_dotenv(dotenv_path='../.env')
 
+# Ensure the data directory exists
+root_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+os.makedirs(root_data_dir, exist_ok=True)
+
 # JSON encoder class to convert to decimal
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -50,9 +54,9 @@ class BuildDataset:
         stock_news;
         """ 
         self.url_post = "?apikey="+self.API_KEY 
-        self.prototype_data_nasdaq = "./data/nasdaq_all_base_table.csv" 
-        self.prototype_data_nyse = "./data/nyse_all_base_table.csv"
-        self.prototype_price_chart_sample = "./data/historical-chart-sample.csv"
+        self.prototype_data_nasdaq = "../data/nasdaq_all_base_table.csv" 
+        self.prototype_data_nyse = "../data/nyse_all_base_table.csv"
+        self.prototype_price_chart_sample = "../data/historical-chart-sample.csv" # TODO: remove this
         
         """ this following dictionary 'category and field dict', 
             stores all fields to be queried from FMP 
@@ -605,8 +609,10 @@ class BuildDataset:
     
     def export_tables(self, postfix): 
         print(f"exporting tables...") 
-        self.table_nasdaq.to_csv("./data/nasdaq_exported_table_" + postfix + ".csv")
-        self.table_nyse.to_csv("./data/nyse_exported_table_" + postfix + ".csv")
+        # self.table_nasdaq.to_csv("./data/nasdaq_exported_table_" + postfix + ".csv")
+        # self.table_nyse.to_csv("./data/nyse_exported_table_" + postfix + ".csv")
+        self.table_nasdaq.to_csv(os.path.join(root_data_dir, "./nasdaq_exported_table_" + postfix + ".csv"))
+        self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
         print("done")
     
     def compute_derived_data_per_row(self, row_data): 
@@ -1028,9 +1034,17 @@ class BuildDataset:
 
 
         # Define crypto dataframe
-        if(params["save_df_as_csv"]):
-            self.crypto_table_df.to_csv('./data/crypto_info_table.csv', mode='w', index=True, header=True)
+        # if(params["save_df_as_csv"]):
+        #     # self.crypto_table_df.to_csv('./data/crypto_info_table.csv', mode='w', index=True, header=True)
+        #     self.crypto_table_df.to_csv(os.path.join(root_data_dir, './data/crypto_info_table.csv', mode='w', index=True, header=True))
+        #     print('Crypto CSV generated!!')
+
+        # Define crypto dataframe
+        if params["save_df_as_csv"]:
+            output_path = os.path.join(root_data_dir, './crypto_info_table.csv')
+            self.crypto_table_df.to_csv(output_path, mode='w', index=True, header=True)
             print('Crypto CSV generated!!')
+
         
         # If current worker is leader, remove row with that matches retention days
         self.is_leader = True if params['worker_index']==0 else False
@@ -1227,7 +1241,7 @@ class BuildDataset:
 
                         # Write to file
                         if(params['save_df_as_csv']):
-                            with open('./data/coin_history.json', 'w') as outfile:
+                            with open('../data/coin_history.json', 'w') as outfile:
                                 outfile.write(json.dumps(schema))
                                 outfile.write(",")
                                 outfile.close()

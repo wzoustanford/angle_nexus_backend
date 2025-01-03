@@ -24,8 +24,9 @@ python3 test_build_dataset.py
 the class/function definitions are in build_dataset.py
 
 
-python3 test_build_dataset.py -wi 4 -ns 8 && python3 test_build_dataset_crypto.py -env dev
+python3 test_build_dataset.py -wi 2 -ns 4 && python3 test_build_dataset_crypto.py -env prod
 
+automobile companies with high pe and high growth
 
 Profile page resonse
 

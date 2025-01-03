@@ -12,7 +12,7 @@ python -m venv env
 python3 -m venv env
 # THEN
 
-source angle_env/bin/activate
+source env/bin/activate
 
 ```
 python test_build_dataset.py -wi 2 -ns 4 

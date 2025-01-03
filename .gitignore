@@ -12,4 +12,6 @@ new_5000.json
 crypto_info_table__.csv
 illumenti_backend_crypto_dev.pem
 env_angle/
+angle_env/
 .DS_Store
+*.csv

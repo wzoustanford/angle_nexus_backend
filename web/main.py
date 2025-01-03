@@ -19,12 +19,14 @@ def get_companies():
 @app.route('/equity-api', methods=['GET', 'POST'])
 def equity_api():
     query = request.args.get('query', '')
+    print('Equity_Query:', query)
     search_res = iSearch.query(query)
     return jsonify(search_res)
 
 @app.route('/crypto-api', methods=['GET', 'POST'])
 def crypto_api():
     query = request.args.get('query', '')
+    print('Crypto_Query:', query)
     search_res = iCryptoSearch.query(query)
     return jsonify(search_res)
 

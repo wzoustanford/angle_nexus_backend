@@ -21,9 +21,9 @@ load_dotenv(dotenv_path='../.env')
     test_samples: (int:)
 """
 dev = {
-    "num_of_coins_by_marketcap": 90,
-    "cmc_active_coins_limit":100,
-    "cmc_mini_batch_coin_size": 80,
+    "num_of_coins_by_marketcap": 10,
+    "cmc_active_coins_limit":10,
+    "cmc_mini_batch_coin_size": 5,
     "coinmarketcap_api_key": os.getenv('COIN_MARKET_CAP_API_KEY'),
     'polygon_api_key': os.getenv('POLYGON_API_KEY'),
     'retention_days': 3,
