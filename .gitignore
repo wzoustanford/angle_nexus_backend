@@ -14,3 +14,4 @@ illumenti_backend_crypto_dev.pem
 env_angle/
 angle_env/
 .DS_Store
+*.log
