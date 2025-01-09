@@ -28,6 +28,15 @@ python3 test_build_dataset.py -wi 2 -ns 4 && python3 test_build_dataset_crypto.p
 
 automobile companies with high pe and high growth
 
+## CRONJOB
+```
+5 0 * * * export $(cat /home/ubuntu/angle_backend/.env | xargs) && (cd /home/ubuntu/angle_backend/datapipeline && /home/ubuntu/angle_backend/env/bin/python /home/ubuntu/angle_backend/datapipeline/test_build_dataset_crypto.py -env prod) >> /home/ubuntu/angle_backend/datapipeline/crypto.log 2>&1
+
+27 2 * * * export $(cat /home/ubuntu/angle_backend/.env | xargs) && (cd /home/ubuntu/angle_backend/datapipeline && /home/ubuntu/angle_backend/env/bin/python /home/ubuntu/angle_backend/datapipeline/test_build_dataset.py -wi 2 -ns 4) >> /home/ubuntu/angle_backend/datapipeline/equity.log 2>&1
+
+```
+
+
 Profile page resonse
 
 ```json

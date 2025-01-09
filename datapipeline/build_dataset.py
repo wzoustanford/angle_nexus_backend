@@ -607,13 +607,30 @@ class BuildDataset:
                 self.query_and_add_col_to_table(table, category, field, col_name) 
         self.compute_derived_data(table)
     
+    # def export_tables(self, postfix): 
+    #     print(f"exporting tables...") 
+    #     # self.table_nasdaq.to_csv("./data/nasdaq_exported_table_" + postfix + ".csv")
+    #     # self.table_nyse.to_csv("./data/nyse_exported_table_" + postfix + ".csv")
+    #     self.table_nasdaq.to_csv(os.path.join(root_data_dir, "./nasdaq_exported_table_" + postfix + ".csv"))
+    #     self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
+    #     print("done")
+
+    import os
+
     def export_tables(self, postfix): 
-        print(f"exporting tables...") 
-        # self.table_nasdaq.to_csv("./data/nasdaq_exported_table_" + postfix + ".csv")
-        # self.table_nyse.to_csv("./data/nyse_exported_table_" + postfix + ".csv")
-        self.table_nasdaq.to_csv(os.path.join(root_data_dir, "./nasdaq_exported_table_" + postfix + ".csv"))
-        self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
-        print("done")
+        print("Exporting tables...")
+        
+        nasdaq_file_path = os.path.join(root_data_dir, f"nasdaq_exported_table_{postfix}.csv")
+        nyse_file_path = os.path.join(root_data_dir, f"nyse_exported_table_{postfix}.csv")
+        
+        self.table_nasdaq.to_csv(nasdaq_file_path)
+        print(f"NASDAQ table exported to: {nasdaq_file_path}")
+        
+        self.table_nyse.to_csv(nyse_file_path)
+        print(f"NYSE table exported to: {nyse_file_path}")
+        
+        print("Done")
+
     
     def compute_derived_data_per_row(self, row_data): 
         print(f"computing derived data per row ...") 

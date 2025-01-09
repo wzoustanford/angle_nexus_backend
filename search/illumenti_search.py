@@ -296,6 +296,10 @@ class IllumentiSearch:
             value = cond[2] 
             field = self.map_from_keyword_to_field[keyword]
             #pdb.set_trace()
+            
+            print(f"filtering with field {field}")
+            print(f"self.dataset {self.dataset[field][indices]}")
+
             if not field in self.dataset.columns: 
                 continue 
             if value is None: 
