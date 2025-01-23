@@ -5,7 +5,7 @@ import requests
 from web import create_app, iSearch, iCryptoSearch
 from flask import Response, request, jsonify
 from datetime import datetime, timedelta
-from sseclient import SSEClient
+# from sseclient import SSEClient
 from . import stop, query_dynamo, chat_query_processor, find_company_by_name
 from .keywords import keywords
 

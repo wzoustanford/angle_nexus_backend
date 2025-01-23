@@ -168,6 +168,9 @@ class BuildDataset:
         self.query_build_exchange_table(self.table_nasdaq_base, self.table_nasdaq, 'nasdaq') 
         print("building NYSE w. api queries")
         self.query_build_exchange_table(self.table_nyse_base, self.table_nyse, 'nyse') 
+        print('self.is_last_worker:', self.is_last_worker)
+
+        self.update_latest_ds(self.equity_table) # TODO: REMOVE LATER
         if self.is_last_worker: 
             self.update_latest_ds(self.equity_table)
     
@@ -1275,10 +1278,13 @@ class BuildDataset:
 
     def update_latest_ds(self, table):
         """ Update crypto price-chart data to dynamodb table """
+        print('Updating update_latest_ds')
         now = datetime.now()
         latest_ds = now.strftime("%Y-%m-%d")
         dummy_ds = '2111-11-11'
         dummy_symbol = 'dummy_latestds_ticker'
+
+        print('now, table.name, latest_ds', now, table.name, latest_ds)
 
         tries = 0
         while tries < self.DB_MAX_TRIES:
@@ -1291,6 +1297,7 @@ class BuildDataset:
                         ExpressionAttributeValues={':l': latest_ds},
                         ReturnValues="UPDATED_NEW")
                 print ('{} - update_latest_ds() - {} {}'.format(now, table.name, latest_ds))
+                print('rrrr', r)
                 break
             except ClientError as error:
                 print ('Database update-item({}, {}) failure-{} for data:'\
