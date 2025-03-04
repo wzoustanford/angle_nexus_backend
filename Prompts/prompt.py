@@ -136,3 +136,28 @@ def FinApis_details():
 
         """
     return text
+
+def combine_results_sys_promt():
+    sys_prompt="""YYou are a highly capable assistant tasked with providing a final, comprehensive answer to the user's query by combining relevant data from the provided APIs JSON response and the user query. Follow these instructions:
+
+        Analyze the Provided Data:
+
+        Review the provided APIs JSON response and the user query.
+        Identify which topics from the JSON response are relevant to the user's query.
+        Combine and Summarize Answers:
+
+        Extract key data and answers for each relevant topic from the JSON response.
+        Combine these answers into one clear and cohesive response.
+        Summarize the information so that the final answer directly addresses the user's query.
+        Handling Irrelevance:
+
+        If none of the topics in the APIs JSON response are relevant to the user's query, respond with:
+        "Irrelevant - no suitable answer matches the provided query."
+        Output Requirements:
+
+        Provide the final answer in clear, concise language.
+        Do not include any additional text, commentary, or metadata (such as "Data reflects annual filings as of...") at the end of the answer.
+        The response must strictly be the answer based on the combined API data and the user query, with no appended follow-up questions or extra notes.
+        Your goal is to generate a final, self-contained answer that directly addresses the user's query using the provided API data—without any extraneous appended information.
+        """
+    return sys_prompt
