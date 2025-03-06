@@ -69,71 +69,101 @@ def q_analysis_sys_prompt():
     return sys_prompt
 
 def FinApis_details():
-    text="""Company APIs
-        Company Profile Data API:
-        Details: Access detailed company profile data with the FMP Company Profile Data API. This API provides key financial and operational information for a specific stock symbol, including the company's market capitalization, stock price, industry, and much more.
-        Endpoint: https://financialmodelingprep.com/stable/profile?symbol={company_symbol}
-        params= {symbol}
+    text="""####### Company APIs #######
+            Company Profile Data API:
+            Details: Access detailed company profile data with the FMP Company Profile Data API. This API provides key financial and operational information for a specific stock symbol, including the company's market capitalization, stock price, industry, and much more.
+            Endpoint: https://financialmodelingprep.com/stable/profile?symbol={company_symbol}
+            params= {symbol}
 
-        Company Profile by CIK API:
-        Details:Retrieve detailed company profile data by CIK (Central Index Key) with the FMP Company Profile by CIK API. This API allows users to search for companies using their unique CIK identifier and access a full range of company data, including stock price, market capitalization, industry, and much more.
-        Endpoint: https://financialmodelingprep.com/stable/profile-cik?cik={cpmany_cik_num}
-        params= {cik}
+            Company Profile by CIK API:
+            Details:Retrieve detailed company profile data by CIK (Central Index Key) with the FMP Company Profile by CIK API. This API allows users to search for companies using their unique CIK identifier and access a full range of company data, including stock price, market capitalization, industry, and much more.
+            Endpoint: https://financialmodelingprep.com/stable/profile-cik?cik={cpmany_cik_num}
+            params= {cik}
 
-        Company Notes API: 
-        Details: Retrieve detailed information about company-issued notes with the FMP Company Notes API. Access essential data such as CIK number, stock symbol, note title, and the exchange where the notes are listed.
-        Endpoint: https://financialmodelingprep.com/stable/company-notes?symbol={company_symbol}
-        params= {symbol}
+            Company Notes API: 
+            Details: Retrieve detailed information about company-issued notes with the FMP Company Notes API. Access essential data such as CIK number, stock symbol, note title, and the exchange where the notes are listed.
+            Endpoint: https://financialmodelingprep.com/stable/company-notes?symbol={company_symbol}
+            params= {symbol}
 
-        Stock Peer Comparison API:
-        Details: Identify and compare companies within the same sector and market capitalization range using the FMP Stock Peer Comparison API. Gain insights into how a company stacks up against its peers on the same exchange.
-        Endpoint: https://financialmodelingprep.com/stable/stock-peers?symbol={company_symbol}
-        params= {symbol}
+            Stock Peer Comparison API:
+            Details: Identify and compare companies within the same sector and market capitalization range using the FMP Stock Peer Comparison API. Gain insights into how a company stacks up against its peers on the same exchange.
+            Endpoint: https://financialmodelingprep.com/stable/stock-peers?symbol={company_symbol}
+            params= {symbol}
 
-        Delisted Companies API: 
-        Details: Stay informed with the FMP Delisted Companies API. Access a comprehensive list of companies that have been delisted from US exchanges to avoid trading in risky stocks and identify potential financial troubles.
-        Endpoints: https://financialmodelingprep.com/stable/delisted-companies
-        params= {no params required}
-        Chart APIs
+            Company Market Cap API
+            Details: Retrieve the market capitalization for a specific company on any given date using the FMP Company Market Capitalization API. This API provides essential data to assess the size and value of a company in the stock market, helping users gauge its overall market standing.
+            Endpoint: https://financialmodelingprep.com/stable/market-capitalization?symbol={company_symbol}
+            params= {symbol}
 
-        Basic Stock Chart API: 
-        Details: Access simplified stock chart data using the FMP Basic Stock Chart API. This API provides essential charting information, including date, price, and trading volume, making it ideal for tracking stock performance with minimal data and creating basic price and volume charts.
-        Endpoints: https://financialmodelingprep.com/stable/historical-price-eod/light?symbol={company_symbol} 
-        params= {symbol}
+            Batch Market Cap API
+            Details: Retrieve market capitalization data for multiple companies in a single request with the FMP Batch Market Capitalization API. This API allows users to compare the market size of various companies simultaneously, streamlining the analysis of company valuations.
+            Endpoint: https://financialmodelingprep.com/stable/market-capitalization-batch?symbols={company_symbol1,company_symbol2,…….,company_symboln}
+            params= {symbols}
+            Company Executives API
+            Details: Retrieve detailed information on company executives with the FMP Company Executives API. This API provides essential data about key executives, including their name, title, compensation, and other demographic details such as gender and year of birth.
+            Endpoint:
+            https://financialmodelingprep.com/stable/key-executives?symbol={company_symbol}
+            params= {symbol}
+            Executive Compensation API
+            Details: Retrieve comprehensive compensation data for company executives with the FMP Executive Compensation API. This API provides detailed information on salaries, stock awards, total compensation, and other relevant financial data, including filing details and links to official documents.
+            Endpoint:https://financialmodelingprep.com/stable/governance-executive-compensation?symbol={company_symbol}
 
-        Stock Price and Volume Data API: 
-        Details: Access full price and volume data for any stock symbol using the FMP Comprehensive Stock Price and Volume Data API. Get detailed insights, including open, high, low, close prices, trading volume, price changes, percentage changes, and volume-weighted average price (VWAP).
-        Endpoints: https://financialmodelingprep.com/stable/historical-price-eod/full?symbol={company_symbol} 
-        params= {symbol}
+            ####### Chart APIs #######
+            Basic Stock Chart API: 
+            Details: Access simplified stock chart data using the FMP Basic Stock Chart API. This API provides essential charting information, including date, price, and trading volume, making it ideal for tracking stock performance with minimal data and creating basic price and volume charts.
+            Endpoints: https://financialmodelingprep.com/stable/historical-price-eod/light?symbol={company_symbol} or if to and from date 
+            https://financialmodelingprep.com/stable/historical-price-eod/light?symbol={company_symbol}&to={to_date}&from={from_date}
+            Required params= {symbol}
+            Optional params= {from, to}
 
-        Unadjusted Stock Price API:
-        Details: Access stock price and volume data without adjustments for stock splits with the FMP Unadjusted Stock Price Chart API. Get accurate insights into stock performance, including open, high, low, and close prices, along with trading volume, without split-related changes.
-        Endpoints: https://financialmodelingprep.com/stable/historical-price-eod/non-split-adjusted?symbol={comapny_symbol}
-        params= {symbol}
+            Stock Price and Volume Data API: 
+            Details: Access full price and volume data for any stock symbol using the FMP Comprehensive Stock Price and Volume Data API. Get detailed insights, including open, high, low, close prices, trading volume, price changes, percentage changes, and volume-weighted average price (VWAP).
+            Endpoints: https://financialmodelingprep.com/stable/historical-price-eod/full?symbol={company_symbol} or if to and from date
+            https://financialmodelingprep.com/stable/historical-price-eod/full?symbol={company_symbol}&to={to_date}&from={from_date}
+            Required params= {symbol}
+            Optional params= {from, to}
 
-        Dividend Adjusted Price Chart API: 
-        Details: Analyze stock performance with dividend adjustments using the FMP Dividend-Adjusted Price Chart API. Access end-of-day price and volume data that accounts for dividend payouts, offering a more comprehensive view of stock trends over time.
-        Endpoints: https://financialmodelingprep.com/stable/historical-price-eod/dividend-adjusted?symbol={company_symbol}
-        params= {symbol}
+            15 Min Interval Stock Chart API
+            Details: Access stock price and volume data with the FMP 15-Minute Interval Stock Chart API. Retrieve detailed stock data in 15-minute intervals, including open, high, low, close prices, and trading volume. This API is ideal for creating intraday charts and analyzing medium-term price trends during the trading day.
+            Endpoint:
+            https://financialmodelingprep.com/stable/historical-chart/15min?symbol={company_symbol}
+            or if to,from date, and nonadjusted=false by default
+            https://financialmodelingprep.com/stable/historical-chart/15min?symbol={company_symbol}&to={to_date}&from={from_date}&
+            Required params= {symbol}
+            Optional params= {from, to,nonadjusted}
 
-        Statements APIs
+            ####### Statements APIs #######
+            Real-Time Income Statement API: 
+            Details: Access real-time income statement data for public companies, private companies, and ETFs with the FMP Real-Time Income Statements API. Track profitability, compare competitors, and identify business trends with up-to-date financial data.
+            Endpoints: https://financialmodelingprep.com/stable/income-statement?symbol={company_symbol} or if limit and period (limit is number integer and period is like FY fiscal year, Q1,Q2….Q4)
+            https://financialmodelingprep.com/stable/income-statement?symbol={company_symbol}&limit={user limit}&period={user period (FY/Q1/Q2/Q3/Q4)}
+            Required params= {symbol}
+            Optional parameter={limit, period}
+
+            Balance Sheet Data API:
+            Details:Access detailed balance sheet statements for publicly traded companies with the Balance Sheet Data API. Analyze assets, liabilities, and shareholder equity to gain insights into a company's financial health.
+            Endpoint: https://financialmodelingprep.com/stable/balance-sheet-statement?symbol={company_symbol} or if limit and period (limit is number integer and period is like FY fiscal year, Q1,Q2….Q4)
+            https://financialmodelingprep.com/stable/balance-sheet-statement?symbol={company_symbol}&limit={user limit}&period={user period (FY/Q1/Q2/Q3/Q4)}
+            Required params= {symbol}
+            Optional parameter={limit, period}
 
 
-        Real-Time Income Statement API: 
-        Details: Access real-time income statement data for public companies, private companies, and ETFs with the FMP Real-Time Income Statements API. Track profitability, compare competitors, and identify business trends with up-to-date financial data.
-        Endpoints: https://financialmodelingprep.com/stable/income-statement?symbol={company_symbol}
-        params= {symbol}
+            Cash Flow Statement API:
+            Details:Gain insights into a company's cash flow activities with the Cash Flow Statements API. Analyze cash generated and used from operations, investments, and financing activities to evaluate the financial health and sustainability of a business.
+            Endpoint: https://financialmodelingprep.com/stable/cash-flow-statement?symbol={company_symbol} or if limit and period (limit is number integer and period is like FY fiscal year, Q1,Q2….Q4)
+            https://financialmodelingprep.com/stable/cash-flow-statement?symbol={company_symbol}&limit={user limit}&period={user period (FY/Q1/Q2/Q3/Q4)}
+            Required params= {symbol}
+            Optional parameter={limit, period}
 
-        Balance Sheet Data API:
-        Details:Access detailed balance sheet statements for publicly traded companies with the Balance Sheet Data API. Analyze assets, liabilities, and shareholder equity to gain insights into a company's financial health.
-        Endpoint: https://financialmodelingprep.com/stable/balance-sheet-statement?symbol={company_symbol} 
-        params= {symbol}
+            Latest Financial Statements API
+            Endpoint:https://financialmodelingprep.com/stable/latest-financial-statements 
 
-        Cash Flow Statement API:
-        Details:Gain insights into a company's cash flow activities with the Cash Flow Statements API. Analyze cash generated and used from operations, investments, and financing activities to evaluate the financial health and sustainability of a business.
-        Endpoint: https://financialmodelingprep.com/stable/cash-flow-statement?symbol={company_symbol} 
-        params= {symbol}
-
+            Financial Ratios API
+            Details: Analyze a company's financial performance using the Financial Ratios API. This API provides detailed profitability, liquidity, and efficiency ratios, enabling users to assess a company's operational and financial health across various metrics.
+            Endpoint:https://financialmodelingprep.com/stable/ratios?symbol={company_symbol} or if limit and period (limit is number integer and period is like FY fiscal year, Q1,Q2….Q4)
+            https://financialmodelingprep.com/stable/ratios?symbol={company_symbol}&limit={user limit}&period={user period (FY/Q1/Q2/Q3/Q4)}
+            Required params= {symbol}
+            Optional parameter={limit, period}
         """
     return text
 

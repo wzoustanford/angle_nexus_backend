@@ -6,14 +6,13 @@ load_dotenv()
 
 
 class OpenAIChatClient:
-    def __init__(self, response_format,model="deepseek-reasoner"):
+    def __init__(self,model="deepseek-reasoner"):
         
         if model=="deepseek-reasoner":
             self.client = OpenAI(api_key=os.environ.get("DEEPSEEK_KEY"),base_url=os.environ.get("DEEPSEEK_BASE_URL"))
         else:
             self.client = OpenAI(api_key=os.environ.get("OPENAI_KEY"))
         self.model = model
-        self.response_format=response_format
 
     def create_chat_completion(self, messages):
         try:
@@ -26,11 +25,10 @@ class OpenAIChatClient:
                 return completion.choices[0].message.content
 
             else:
-                completion = self.client.beta.chat.completions.parse(
+                completion = self.client.chat.completions.create(
                     model=self.model,
-                    messages=messages,
-                    response_format=self.response_format
+                    messages=messages
                 )
-                return completion.choices[0].message.parsed
+                return completion.choices[0].message.content
         except Exception as e:
             return f"An error occurred: {e}"

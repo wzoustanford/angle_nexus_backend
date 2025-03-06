@@ -8,13 +8,14 @@ import json
 import os
 
 
-model="deepseek-reasoner"
-# model="gpt-4o-2024-08-06"
+####Switch model 
+# model="deepseek-reasoner"
+model="o3-mini"
 
 
 
 
-chat_client = OpenAIChatClient(response_format=APIModel,model=model)
+chat_client = OpenAIChatClient(model=model)
 sys_prompt=q_analysis_sys_prompt()
 fin_apis=FinApis_details()
 today_date=date.today()
@@ -35,8 +36,8 @@ if model=="deepseek-reasoner":
     print("LLM API Response: ",json.dumps(llm_json_response,indent=4))
 
 else: 
-    llm_json_response=output_message.model_dump_json(indent=4)
-    print("LLM API Response: ",llm_json_response)
+    llm_json_response=json.loads(output_message)
+    print("LLM API Response: ",json.dumps(llm_json_response,indent=4))
 
 
 print(f"Calling Finance APIs in progress.")
