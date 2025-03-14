@@ -54,3 +54,6 @@ def chat():
     else:
         messages2=format_conversation(chat_request.history, f"here is ther user input: {chat_request.user_input}.\n", combine_results_sys_promt(), window_size=6)
     return Response(chat_client.create_chat_stream(messages2),mimetype='text/plain')
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)
