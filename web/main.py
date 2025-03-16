@@ -8,42 +8,143 @@ from flask import Response, request, jsonify
 from datetime import datetime, timedelta
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+# from openai import OpenAI
+from openai import OpenAI
 
 from web import create_app, iSearch, iCryptoSearch
 from . import stop, query_dynamo, chat_query_processor, find_company_by_name
 from .keywords import keywords
 
-widget_mappings = {
-    'equity_coin_carousel': {
-        'description': 'Displays a carousel of equity coins with relevant data.',
-        'expected_parameters': {
-            'name': 'Name of the equity coin',
-            'ticker': 'Ticker symbol of the equity coin',
-            'currency': 'Currency of the equity coin',
-            'stockValue': 'Current stock value',
-            'duration': 'Duration of the data',
-            'isPositiveChange': 'Boolean indicating if the change is positive',
-            'changeValue': 'Change value in percentage',
-            'chart1w': 'Chart data for the last week',
-            'capsule': 'List of capsule data'
-        }
+
+# Initialize the client
+client = OpenAI(api_key="sk-", base_url="htek.com")
+
+def call_reasoning_model(content):
+    messages = [{"role": "user", "content": content}]
+    response = client.chat.completions.create(
+        model="deepseek-reasoner",
+        messages=messages
+    )
+
+    # reasoning_content = response.choices[0].message.reasoning_content
+    message = response.choices[0].message.content
+
+    return message
+
+
+
+widgets_mappings = [
+    {
+        "id": "companies_organization_business_widget",
+        "widget_type": "equity",
+        "category": "equity",
+        "related_keywords": ["companies", "organization", "business"],
+        "description": "Here is a brief description for the equity widget and prompt.",
+        "parameters": [
+            {"name": "entityCardData", "type": "List", "description": "List of data objects for EntityCards"},
+            {"name": "route", "type": "String", "description": "Navigation route"},
+            {"name": "entityName", "type": "String", "description": "Display name of entity"},
+            {"name": "currency", "type": "String", "description": "Currency symbol"},
+            {"name": "value", "type": "double", "description": "Numerical value"},
+            {"name": "percentageValue", "type": "double", "description": "Percentage change"},
+            {"name": "isProfit", "type": "bool", "description": "Profit/loss indicator"},
+            {"name": "color", "type": "Color", "description": "Card background color"},
+            {"name": "dropShadow", "type": "bool", "description": "Shadow visibility"},
+            {"name": "hasImage", "type": "bool", "description": "Image display toggle"},
+            {"name": "imgUrl", "type": "String", "description": "Image URL"}
+        ]
     },
-    'entity_card_img': {
-        'description': 'Displays an entity card with an image and relevant data.',
-        'expected_parameters': {
-            'route': 'Route for the entity',
-            'entityName': 'Name of the entity',
-            'currency': 'Currency of the entity',
-            'value': 'Current value of the entity',
-            'percentageValue': 'Percentage value of the entity',
-            'isProfit': 'Boolean indicating if the entity is profitable',
-            'color': 'Color of the entity card',
-            'dropShadow': 'Boolean indicating if the card should have a drop shadow',
-            'hasImage': 'Boolean indicating if the card has an image',
-            'imgUrl': 'URL of the image'
-        }
+    {
+        "id": "cryptocurrency_widget",
+        "widget_type": "WidgetType.cryptoCardWidget",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is a brief description for the equity widget and prompt.",
+        "parameters": []
+    },
+    {
+        "id": "ceo_leadership_widget",
+        "widget_type": "WidgetType.metricsEquity",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is a brief description for the ceo widget and prompt.",
+        "parameters": [
+            {"name": "metrics", "type": "List", "description": "List of metrics"},
+            {"name": "person", "type": "Profile", "description": "CEO profile data"},
+            {"name": "description", "type": "String", "description": "Company description"}
+        ]
+    },
+    {
+        "id": "earnings_revenue_widget",
+        "widget_type": "WidgetType.customTabs",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is the breakdown of earnings.",
+        "parameters": [
+            {"name": "annualEarnings", "type": "List", "description": "Yearly earnings data"},
+            {"name": "quaterlyEarnings", "type": "List", "description": "Quarterly earnings data"},
+            {"name": "metrics", "type": "List", "description": "Company performance metrics"}
+        ]
+    },
+    {
+        "id": "web_internet_widget",
+        "widget_type": "WidgetType.browserWidget",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is a brief description for the web widget and prompt.",
+        "parameters": [
+            {"name": "height", "type": "int", "description": "Fixed height"},
+            {"name": "query", "type": "String", "description": "Search query from parameters"}
+        ]
+    },
+    {
+        "id": "document_text_widget",
+        "widget_type": "WidgetType.documentWidget",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is a brief description for the document widget and prompt.",
+        "parameters": []
+    },
+    {
+        "id": "stocks_time_series_widget",
+        "widget_type": "WidgetType.timeSeriesWidget",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is a brief description for the chart widget and prompt.",
+        "parameters": [
+            {"name": "chartAll", "type": "ChartData", "description": ""},
+            {"name": "chart1y", "type": "ChartData", "description": ""},
+            {"name": "chart6m", "type": "ChartData", "description": ""},
+            {"name": "chart1w", "type": "ChartData", "description": ""},
+            {"name": "chart1m", "type": "ChartData", "description": ""},
+            {"name": "chart1yStepLine", "type": "ChartData", "description": ""},
+            {"name": "stepLineLeastValue", "type": "double", "description": ""},
+            {"name": "stepLineMaxValue", "type": "double", "description": ""}
+        ]
+    },
+    {
+        "id": "balance_sheet_widget",
+        "widget_type": "WidgetType.balanceSheetWidget",
+        "category": "crypto",
+        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
+        "description": "Here is a brief description for the balance sheet widget and prompt.",
+        "parameters": [
+            {"name": "benchmark", "type": "List", "description": "Benchmark data"},
+            {"name": "assets", "type": "List", "description": "Assets data"},
+            {"name": "liability", "type": "List", "description": "Liabilities data"}
+        ]
+    },
+    {
+        "id": "pdf_widget",
+        "widget_type": "WidgetType.pdfWidget",
+        "category": "pdf",
+        "related_keywords": ["pdf", "doc"],
+        "description": "Here is a brief description for the pdf widget and prompt.",
+        "parameters": [
+            {"name": "url", "type": "String", "description": "PDF URL"}
+        ]
     }
-}
+]
 
 
 # Constants
@@ -158,58 +259,81 @@ def chat():
     Stream endpoint to handle questions and return OpenAI API responses.
     """
     try:
-        prompt = request.form.get('prompt')
+        print('CHAT<>')
+        prompt = request.get_json('message')
+        print('prompt1:', prompt)
         if not prompt:
             return Response("No prompt provided", status=400)
 
-        # Parse the JSON payload from the prompt
-        payload = json.loads(prompt)
-        current_question = payload.get('current_question')
-        previous_questions = payload.get('previous_questions', [])
-        previous_answers = payload.get('previous_answers', [])
+        print('prompt:', prompt)
+        """
+        {
+            "current_question": "What is the market cap of Apple?",
+            "previous_questions": ["What is the market cap of Apple?"],
+            # "previous_answers": ["Apple's market cap is $2 trillion."]
+        }
+        """
+        # Step 1: Ask o1 "what information do you think the user is asking? (returns a list of multiple topics, break it down)"
+        # Add a check to return company code i.e APPL for Apple or MSFT for Microsoft etc Also add for crypto
+        # result = call_reasoning_model(prompt)
+        # print('result:', result)
 
-        if not current_question:
-            return Response("No current question provided", status=400)
+        widget_prompt = f" ```{widgets_mappings}```"
+        print('widget_prompt:', widget_prompt)
+        
+        # Step2: Ask o1 "With each topics(widgets) in the list `widgets_mappings` (indexed by K): (for loop over all topics/widgets)
+        #  could you tell me which widgets from the widget list we should call for the user's question? (returns a list of widgets)"
+        #  "
 
-        logger.info(f'Received question: {current_question}')
-        logger.info(f'Previous questions: {previous_questions}')
-        logger.info(f'Previous answers: {previous_answers}')
+        # # Parse the JSON payload from the prompt
+        # payload = json.loads(prompt)
+        # current_question = payload.get('current_question')
+        # previous_questions = payload.get('previous_questions', [])
+        # previous_answers = payload.get('previous_answers', [])
 
-        yesterday = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
+        # if not current_question:
+        #     return Response("No current question provided", status=400)
+
+        # logger.info(f'Received question: {current_question}')
+        # logger.info(f'Previous questions: {previous_questions}')
+        # logger.info(f'Previous answers: {previous_answers}')
+
+        # yesterday = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
 
         # Build the previous context
-        previous_context = ''
+        # previous_context = ''
         # for q, a in zip(previous_questions, previous_answers):
         #     previous_context += f"Q: {q}\nA: {a}\n"
 
-        symbols = filter_and_find_symbols(current_question, keywords)
-        print('symbols:', symbols)
-        options = fetch_data_from_dynamo(symbols, yesterday)
-        print('options:', options)
-        prompts = generate_prompts(options, current_question, previous_context)
-        print('prompts:', prompts)
-        openai_response = call_openai_api(prompts)
-        print('openai_response:', openai_response)
+        # symbols = filter_and_find_symbols(current_question, keywords)
+        # print('symbols:', symbols)
+        # options = fetch_data_from_dynamo(symbols, yesterday)
+        # print('options:', options)
+        # prompts = generate_prompts(options, current_question, previous_context)
+        # print('prompts:', prompts)
+        # openai_response = call_openai_api(prompts)
+        # print('openai_response:', openai_response)
        
 
         # Check if the response contains a widget command
         try:
-            response_data = json.loads(openai_response)
-            if 'widget' in response_data:
-                widget_command = response_data['widget']
-                widget_payload = response_data.get('payload', {})
-                response_data['widget_info'] = widget_mappings.get(widget_command, {})
-                response_data['widget_payload'] = widget_payload
+            # response_data = json.loads(openai_response)
+            response_data = 'json.loads(openai_response)'
+            # if 'widget' in response_data:
+            #     widget_command = response_data['widget']
+            #     widget_payload = response_data.get('payload', {})
+            #     response_data['widget_info'] = widget_mappings.get(widget_command, {})
+            #     response_data['widget_payload'] = widget_payload
 
-                print('plain_text:')
-                print('openai_response:', openai_response)
+            #     print('plain_text:')
+            #     # print('openai_response:', openai_response)
 
             return Response(json.dumps(response_data), mimetype='application/json')
         except json.JSONDecodeError:
             # If the response is not JSON, return it as plain text
             print('plain_text:')
-            print('openai_response:', openai_response)
-            return Response(openai_response, mimetype='text/event-stream')
+            # print('openai_response:', openai_response)
+            # return Response(openai_response, mimetype='text/event-stream')
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         return Response(f"An error occurred: {e}", status=500)
