@@ -1,6 +1,7 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -27,7 +28,8 @@ class OpenAIChatClient:
             else:
                 completion = self.client.chat.completions.create(
                     model=self.model,
-                    messages=messages
+                    messages=messages,
+                    reasoning_effort="low"
                 )
                 return completion.choices[0].message.content
         except Exception as e:
@@ -39,7 +41,7 @@ class OpenAIChatClient:
                 model=self.model,
                 messages=messages,
                 stream=True,
-
+                reasoning_effort="low"
             )
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:

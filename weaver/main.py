@@ -6,12 +6,25 @@ from Models.model import *
 from datetime import date
 from Utils.util import *
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+def fetch_data(key, api_url):
+    response = get_finance_api_data(api_url)
+    return key, response
 
 
 
 app = Flask(__name__)
+@app.after_request
+def add_cors_headers(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    return response
 
-ALLOWED_MODELS = ["o3-mini", "GPT-4o","deepseek-reasoner"]# allowed models
+ALLOWED_MODELS = ["o3-mini", "GPT-4o","deepseek-reasoner","o1","o1-mini"]# allowed models
 
 
 @app.route("/")
@@ -44,13 +57,21 @@ def chat():
 
     finance_api_responses={}
     if k_topics_json:
-        for key,api_json in k_topics_json.items():
-            response=get_finance_api_data(api_json['api'])
-            if response:
-                finance_api_responses[key]=response
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # Submit all API calls to the executor.
+            futures = {executor.submit(fetch_data, key, api_json['api']): key 
+                    for key, api_json in k_topics_json.items()}
+            
+            # As each future completes, get the result and update the response dictionary.
+            for future in as_completed(futures):
+                key, response = future.result()
+                if response:
+                    finance_api_responses[key] = response
         if finance_api_responses:
             user_input=f"Here is Financial apis reponses:\n {json.dumps(finance_api_responses)}, and here is ther user input: {chat_request.user_input}.\n Today Date is: {today_date}"
             messages2=format_conversation(chat_request.history, user_input, combine_results_sys_promt(), window_size=6)
+        else:
+            messages2=format_conversation(chat_request.history, f"here is ther user input: {chat_request.user_input}.\n", combine_results_sys_promt(), window_size=6)
     else:
         messages2=format_conversation(chat_request.history, f"here is ther user input: {chat_request.user_input}.\n", combine_results_sys_promt(), window_size=6)
     return Response(chat_client.create_chat_stream(messages2),mimetype='text/plain')
