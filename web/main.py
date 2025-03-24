@@ -2,153 +2,21 @@ import os
 import sys
 import json
 import requests
+import decimal
 import logging
 import numpy as np
 from flask import Response, request, jsonify
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-# from openai import OpenAI
-from openai import OpenAI
+from decimal import Decimal
 
 from web import create_app, iSearch, iCryptoSearch
 from . import stop, query_dynamo, chat_query_processor, find_company_by_name
 from .keywords import keywords
-
-
-# Initialize the client
-client = OpenAI(api_key="sk-", base_url="htek.com")
-
-def call_reasoning_model(content):
-    messages = [{"role": "user", "content": content}]
-    response = client.chat.completions.create(
-        model="deepseek-reasoner",
-        messages=messages
-    )
-
-    # reasoning_content = response.choices[0].message.reasoning_content
-    message = response.choices[0].message.content
-
-    return message
-
-
-
-widgets_mappings = [
-    {
-        "id": "companies_organization_business_widget",
-        "widget_type": "equity",
-        "category": "equity",
-        "related_keywords": ["companies", "organization", "business"],
-        "description": "Here is a brief description for the equity widget and prompt.",
-        "parameters": [
-            {"name": "entityCardData", "type": "List", "description": "List of data objects for EntityCards"},
-            {"name": "route", "type": "String", "description": "Navigation route"},
-            {"name": "entityName", "type": "String", "description": "Display name of entity"},
-            {"name": "currency", "type": "String", "description": "Currency symbol"},
-            {"name": "value", "type": "double", "description": "Numerical value"},
-            {"name": "percentageValue", "type": "double", "description": "Percentage change"},
-            {"name": "isProfit", "type": "bool", "description": "Profit/loss indicator"},
-            {"name": "color", "type": "Color", "description": "Card background color"},
-            {"name": "dropShadow", "type": "bool", "description": "Shadow visibility"},
-            {"name": "hasImage", "type": "bool", "description": "Image display toggle"},
-            {"name": "imgUrl", "type": "String", "description": "Image URL"}
-        ]
-    },
-    {
-        "id": "cryptocurrency_widget",
-        "widget_type": "WidgetType.cryptoCardWidget",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is a brief description for the equity widget and prompt.",
-        "parameters": []
-    },
-    {
-        "id": "ceo_leadership_widget",
-        "widget_type": "WidgetType.metricsEquity",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is a brief description for the ceo widget and prompt.",
-        "parameters": [
-            {"name": "metrics", "type": "List", "description": "List of metrics"},
-            {"name": "person", "type": "Profile", "description": "CEO profile data"},
-            {"name": "description", "type": "String", "description": "Company description"}
-        ]
-    },
-    {
-        "id": "earnings_revenue_widget",
-        "widget_type": "WidgetType.customTabs",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is the breakdown of earnings.",
-        "parameters": [
-            {"name": "annualEarnings", "type": "List", "description": "Yearly earnings data"},
-            {"name": "quaterlyEarnings", "type": "List", "description": "Quarterly earnings data"},
-            {"name": "metrics", "type": "List", "description": "Company performance metrics"}
-        ]
-    },
-    {
-        "id": "web_internet_widget",
-        "widget_type": "WidgetType.browserWidget",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is a brief description for the web widget and prompt.",
-        "parameters": [
-            {"name": "height", "type": "int", "description": "Fixed height"},
-            {"name": "query", "type": "String", "description": "Search query from parameters"}
-        ]
-    },
-    {
-        "id": "document_text_widget",
-        "widget_type": "WidgetType.documentWidget",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is a brief description for the document widget and prompt.",
-        "parameters": []
-    },
-    {
-        "id": "stocks_time_series_widget",
-        "widget_type": "WidgetType.timeSeriesWidget",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is a brief description for the chart widget and prompt.",
-        "parameters": [
-            {"name": "chartAll", "type": "ChartData", "description": ""},
-            {"name": "chart1y", "type": "ChartData", "description": ""},
-            {"name": "chart6m", "type": "ChartData", "description": ""},
-            {"name": "chart1w", "type": "ChartData", "description": ""},
-            {"name": "chart1m", "type": "ChartData", "description": ""},
-            {"name": "chart1yStepLine", "type": "ChartData", "description": ""},
-            {"name": "stepLineLeastValue", "type": "double", "description": ""},
-            {"name": "stepLineMaxValue", "type": "double", "description": ""}
-        ]
-    },
-    {
-        "id": "balance_sheet_widget",
-        "widget_type": "WidgetType.balanceSheetWidget",
-        "category": "crypto",
-        "related_keywords": ["crypto", "cryptocurrencies", "bitcoin", "ethereum", "btc"],
-        "description": "Here is a brief description for the balance sheet widget and prompt.",
-        "parameters": [
-            {"name": "benchmark", "type": "List", "description": "Benchmark data"},
-            {"name": "assets", "type": "List", "description": "Assets data"},
-            {"name": "liability", "type": "List", "description": "Liabilities data"}
-        ]
-    },
-    {
-        "id": "pdf_widget",
-        "widget_type": "WidgetType.pdfWidget",
-        "category": "pdf",
-        "related_keywords": ["pdf", "doc"],
-        "description": "Here is a brief description for the pdf widget and prompt.",
-        "parameters": [
-            {"name": "url", "type": "String", "description": "PDF URL"}
-        ]
-    }
-]
-
-
-# Constants
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+from .apis.fmp_api import get_finance_api_data
+from .apis.reasoning import ReasoningChatClient
+from .prompts.prompts import query_analysis_prompt, fintech_apis_prompt, combine_results_sys_promt, widget_sys_prompt
 
 app = create_app()
 
@@ -156,6 +24,10 @@ app = create_app()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+# Choose the model for the chat client (switch easily if needed)
+model = "o3-mini"  # Options: "o3-mini" or "deepseek-reasoner"
+chat_client = ReasoningChatClient(model=model)
 
 @app.route('/companies', methods=['GET'])
 def get_companies():
@@ -218,10 +90,10 @@ def fetch_data_from_dynamo(symbols, date):
     """
     results = []
     for symbol in symbols:
+        print("Fetching data for symbol:", symbol)
         result = query_dynamo(date, symbol)
-        results.append(result)
-    
-    # print('results:', results)
+        if result is not None:
+            results.append(result)
     return results
 
 def generate_prompts(options, question, previous_context):
@@ -232,111 +104,136 @@ def generate_prompts(options, question, previous_context):
     prompts.append(previous_context)
     return prompts
 
-def call_openai_api(prompts):
-    """
-    Call OpenAI API with the generated prompts.
-    """
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.getenv('OPEN_API_KEY')}",
-    }
-
-    content = ' '.join(prompts)
-    data = {
-        "model": "gpt-4",
-        "max_tokens": 700,
-        "temperature": 0.7,
-        "messages": [{"role": "user", "content": content}],
-    }
-    response = requests.post(OPENAI_API_URL, headers=headers, json=data)
-    response.raise_for_status()
-    return response.json()['choices'][0]['message']['content']
 
 
 @app.route('/chat', methods=['POST'])
 def chat():
     """
-    Stream endpoint to handle questions and return OpenAI API responses.
+    Endpoint to handle chat requests and return responses using the OpenAI API.
     """
     try:
-        print('CHAT<>')
-        prompt = request.get_json('message')
-        print('prompt1:', prompt)
-        if not prompt:
+        # Retrieve the JSON prompt from the request
+        request_data = request.get_json()
+        user_input = request_data.get('message') if request_data else None
+        # user_input = """"""
+        print('user_input:', user_input)
+
+        if not user_input:
             return Response("No prompt provided", status=400)
 
-        print('prompt:', prompt)
-        """
-        {
-            "current_question": "What is the market cap of Apple?",
-            "previous_questions": ["What is the market cap of Apple?"],
-            # "previous_answers": ["Apple's market cap is $2 trillion."]
-        }
-        """
-        # Step 1: Ask o1 "what information do you think the user is asking? (returns a list of multiple topics, break it down)"
-        # Add a check to return company code i.e APPL for Apple or MSFT for Microsoft etc Also add for crypto
-        # result = call_reasoning_model(prompt)
-        # print('result:', result)
+        # Prepare system prompts and API details
+        system_prompt = query_analysis_prompt()
+        fin_apis_details = fintech_apis_prompt()
+        today_date = date.today()
 
-        widget_prompt = f" ```{widgets_mappings}```"
-        print('widget_prompt:', widget_prompt)
+        # Compose the initial message for LLM processing
+        initial_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": (
+                f"Here is Financial APIs details:\n{fin_apis_details}, and here is the user input: {user_input}.\n"
+                f"Today Date is: {today_date}"
+            )},
+        ]
+
+        print(f"Processing initial chat completion using {model} model...")
+        llm_response_text = chat_client.create_chat_completion(initial_messages)
+        print("Initial chat completion complete.")
+        with open('messages1.json', 'w') as file:
+                    json.dump(llm_response_text, file)
+
+        # Process the LLM response for JSON content
+        if model == "deepseek-reasoner":
+            cleaned_response = llm_response_text.strip("```json").strip("```").strip()
+            llm_json_response = json.loads(cleaned_response)
+        else:
+            llm_json_response = json.loads(llm_response_text)
+
+        print("LLM API Response:", json.dumps(llm_json_response, indent=4))
         
-        # Step2: Ask o1 "With each topics(widgets) in the list `widgets_mappings` (indexed by K): (for loop over all topics/widgets)
-        #  could you tell me which widgets from the widget list we should call for the user's question? (returns a list of widgets)"
-        #  "
+        # Initialize a list to store symbols
+        symbols_set = set()
 
-        # # Parse the JSON payload from the prompt
-        # payload = json.loads(prompt)
-        # current_question = payload.get('current_question')
-        # previous_questions = payload.get('previous_questions', [])
-        # previous_answers = payload.get('previous_answers', [])
+        # Call Finance APIs based on LLM response keys and accumulate results
+        finance_api_responses = {}
+        if llm_json_response:
+            for key, api_json in llm_json_response.items():
+                # Extract the symbol and add it to the symbols list
+                symbol = api_json.get('symbol')
+                if symbol:
+                    symbols_set.add(symbol)
 
-        # if not current_question:
-        #     return Response("No current question provided", status=400)
+                response = get_finance_api_data(api_json['api'])
+                if response:
+                    finance_api_responses[key] = response
+            
+            # extract all the symbols from the variable and call dynmodb
+            # call the function to get the data from dynamoDB
+            dynamo_response = fetch_data_from_dynamo(list(symbols_set), today_date.isoformat())
+            
 
-        # logger.info(f'Received question: {current_question}')
-        # logger.info(f'Previous questions: {previous_questions}')
-        # logger.info(f'Previous answers: {previous_answers}')
+            print("Finance API calls complete.")
 
-        # yesterday = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
+            # If finance API data is available, combine results and generate widget response
+            if finance_api_responses:
+                # Combine results with a follow-up LLM call
+                combine_messages = [
+                    {"role": "system", "content": combine_results_sys_promt()},
+                    {"role": "user", "content": (
+                        f"Here is Financial APIs responses:\n{json.dumps(finance_api_responses)}, and here is the user input: {user_input}.\n"
+                        f"Today Date is: {today_date}"
+                    )},
+                ]
+                print(f"Combining results using {model} model...")
+                combined_response = chat_client.create_chat_completion(combine_messages)
+                print("Combined results complete.")
+                with open('messages2.json', 'w') as file:
+                    json.dump(combined_response, file)
 
-        # Build the previous context
-        # previous_context = ''
-        # for q, a in zip(previous_questions, previous_answers):
-        #     previous_context += f"Q: {q}\nA: {a}\n"
+                # Create widget message using combined response and original LLM output
+                widget_messages = [
+                    {"role": "system", "content": widget_sys_prompt()},
+                    {"role": "user", "content": (
+                        f"Here is the user input {llm_json_response} \n and here is the explanation: {combined_response}"
+                    )},
+                ]
 
-        # symbols = filter_and_find_symbols(current_question, keywords)
-        # print('symbols:', symbols)
-        # options = fetch_data_from_dynamo(symbols, yesterday)
-        # print('options:', options)
-        # prompts = generate_prompts(options, current_question, previous_context)
-        # print('prompts:', prompts)
-        # openai_response = call_openai_api(prompts)
-        # print('openai_response:', openai_response)
-       
+                # Optionally save the widget messages to a file for debugging or logging
+                print('Saving widget messages to messages3.json')
+                with open('messages3.json', 'w') as file:
+                    json.dump(widget_messages, file)
 
-        # Check if the response contains a widget command
-        try:
-            # response_data = json.loads(openai_response)
-            response_data = 'json.loads(openai_response)'
-            # if 'widget' in response_data:
-            #     widget_command = response_data['widget']
-            #     widget_payload = response_data.get('payload', {})
-            #     response_data['widget_info'] = widget_mappings.get(widget_command, {})
-            #     response_data['widget_payload'] = widget_payload
+                widget = chat_client.create_chat_completion(widget_messages)
+                print("Widget response complete.")
+                print("Widget:", widget)
+                return {"widget": widget, "message": combined_response, "data":dynamo_response}
+            else:
+                print("No finance API data found.")
+        else:
+            print("No LLM API response found.")
 
-            #     print('plain_text:')
-            #     # print('openai_response:', openai_response)
-
-            return Response(json.dumps(response_data), mimetype='application/json')
-        except json.JSONDecodeError:
-            # If the response is not JSON, return it as plain text
-            print('plain_text:')
-            # print('openai_response:', openai_response)
-            # return Response(openai_response, mimetype='text/event-stream')
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         return Response(f"An error occurred: {e}", status=500)
+
+
+@app.route('/update_dynamo_response', methods=['POST'])
+def update_dynamo_response():
+    try:
+        today_date = date.today()
+        symbols = ['TSLA', 'MSFT']
+
+        if not symbols or not today_date:
+            return jsonify({"error": "Missing symbols or today_date in request"}), 400
+        
+        print("Fetching data from DynamoDB for symbols:", symbols)
+
+        # Fetch data from DynamoDB
+        dynamo_response = fetch_data_from_dynamo(symbols, today_date.isoformat())
+
+        return jsonify({"message": "Data saved to text file.", "response": dynamo_response}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
     
 if __name__ == '__main__':

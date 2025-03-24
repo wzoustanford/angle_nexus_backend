@@ -15,3 +15,7 @@ env_angle/
 angle_env/
 .DS_Store
 *.log
+Output/
+APIs/
+*.json
+*.csv
