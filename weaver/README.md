@@ -47,10 +47,10 @@ flask run
 ```
 cd weaver
 
-gunicorn main:app -b 0.0.0.0:5001 -w 4 -t 300
+gunicorn main:app -b 0.0.0.0:8000 -w 4 -t 300
 
 #### or running in background
-gunicorn main:app -b 0.0.0.0:5001 -w 4 -t 300 --daemon
+gunicorn main:app -b 0.0.0.0:8000 -w 4 -t 300 --daemon
 
 ```
 
@@ -59,10 +59,10 @@ How to run command using curl command.
 ```
 1) for Local system command
 
-curl -X POST http://localhost:5001/weaver -H "Content-Type: application/json" -d '{"user_input": "I want to see the combined cash flow number in USD of Microsoft for the past two years.", "history": [], "model_name": "o3-mini"}'
+curl -X POST http://localhost:8000/weaver -H "Content-Type: application/json" -d '{"user_input": "I want to see the combined cash flow number in USD of Microsoft for the past two years.", "history": [], "model_name": "o3-mini"}'
 
 2) for Production server command
-curl -X POST http://{production_server_public_IP}:5001/weaver -H "Content-Type: application/json" -d '{"user_input": "I want to see the combined cash flow number in USD of Microsoft for the past two years.", "history": [], "model_name": "o3-mini"}'
+curl -X POST http://{production_server_public_IP}:8000/weaver -H "Content-Type: application/json" -d '{"user_input": "I want to see the combined cash flow number in USD of Microsoft for the past two years.", "history": [], "model_name": "o3-mini"}'
 
 Explaination API parameters:
 
