@@ -7,11 +7,8 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import nltk
 from nltk.corpus import stopwords
-# nltk.download('stopwords')
-
 from search.illumenti_search import IllumentiSearch
 from search.illumenti_crypto_search import IllumentiCryptoSearch
-
 
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -53,16 +50,34 @@ def find_company_by_name(name, companies):
             return ticker
     return None
 
-def query_dynamo(yesterday, symbol):
+def query_dynamo(date, symbol):
     """
     Query DynamoDB for a given date and symbol.
     """
     try:
-        response = equity_table.get_item(Key={'ds': yesterday, 'symbol': symbol})
-        return response
+        print("Date:", date, "'symbol': ", symbol)
+        response = equity_table.get_item(Key={'ds': date, 'symbol': symbol})
+        if 'Item' in response:
+            return response['Item']
+        else:
+            print(f"No item found for date: {date}, symbol: {symbol}")
+            print('RESPONSEEEEE', response)
+            return None
     except ClientError as e:
         logger.error(f"Failed to query DynamoDB: {e}")
         return None
+    
+def fetch_data_from_dynamo(symbols, date):
+    """
+    Fetch data from DynamoDB for the given symbols and date.
+    """
+    results = []
+    for symbol in symbols:
+        print("Fetching data for symbol:", symbol)
+        result = query_dynamo(date, symbol)
+        if result is not None:
+            results.append(result)
+    return results
 
 def chat_query_processor(response, current_context):
     """
@@ -105,7 +120,7 @@ def create_app():
     # Use dynamic paths for dataset loading
     base_path = os.path.dirname(os.path.abspath(__file__))
     # Updated path to point to root 'data' directory
-    data_path = os.path.join(base_path, '..', 'data') 
+    data_path = os.path.join(base_path, '..', 'data')
 
     # Load datasets
     try:
