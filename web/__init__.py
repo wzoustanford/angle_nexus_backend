@@ -66,6 +66,18 @@ def query_dynamo(date, symbol):
     except ClientError as e:
         logger.error(f"Failed to query DynamoDB: {e}")
         return None
+    
+def fetch_data_from_dynamo(symbols, date):
+    """
+    Fetch data from DynamoDB for the given symbols and date.
+    """
+    results = []
+    for symbol in symbols:
+        print("Fetching data for symbol:", symbol)
+        result = query_dynamo(date, symbol)
+        if result is not None:
+            results.append(result)
+    return results
 
 def chat_query_processor(response, current_context):
     """
