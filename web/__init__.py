@@ -78,6 +78,7 @@ def fetch_data_from_dynamo(symbols, date):
         if result is not None:
             results.append(result)
     return results
+    
 
 def chat_query_processor(response, current_context):
     """
