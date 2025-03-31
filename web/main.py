@@ -104,6 +104,7 @@ def weaver_chat():
         messages2=format_conversation(chat_request.history, f"here is ther user input: {chat_request.user_input}.\n", combine_results_sys_promt(), window_size=6)
     return Response(chat_client.create_chat_stream(messages2),mimetype='text/plain')
 
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
@@ -124,25 +125,54 @@ def chat():
         response_text = chat_client.create_chat_completion(initial_messages)
         print("Raw response:", response_text)  
 
-        # Clean the response text
-        response_text_clean = response_text.strip().replace('```json', '').replace('```', '')
-        reasoning_response = json.loads(response_text_clean)
-
-        print("SYMBOLS:", list(reasoning_response['symbols']))
-        dynamo_response = fetch_data_from_dynamo(list(reasoning_response['symbols']), today_date.isoformat())
-        print("DynamoDB response:", len(dynamo_response))
-
-        return {
-            "message": reasoning_response['message'],
-            "data": dynamo_response
-        }
-    except json.JSONDecodeError as e:
-        print(f"JSON Parse Error: {e}")
-        return Response(f"Invalid JSON response from API: {response_text}", status=500)
+        # Better handling of the response
+        try:
+            # Add validation to check if the response contains JSON
+            if "{" in response_text and "}" in response_text:
+                # Extract JSON part from the response
+                # Look for JSON between curly braces
+                json_start = response_text.find('{')
+                json_end = response_text.rfind('}') + 1
+                
+                if json_start >= 0 and json_end > json_start:
+                    json_content = response_text[json_start:json_end]
+                    reasoning_response = json.loads(json_content)
+                    
+                    print("SYMBOLS:", list(reasoning_response.get('symbols', [])))
+                    symbols = list(reasoning_response.get('symbols', []))
+                    
+                    if symbols:
+                        dynamo_response = fetch_data_from_dynamo(symbols, today_date.isoformat())
+                        print("DynamoDB response:", len(dynamo_response))
+                        
+                        return {
+                            "message": reasoning_response.get('message', ''),
+                            "data": dynamo_response
+                        }
+                    else:
+                        return {
+                            "message": reasoning_response.get('message', ''),
+                            "data": []
+                        }
+            
+            # If we couldn't extract valid JSON, return the text response
+            return {
+                "message": "I couldn't process your request as expected.",
+                "data": []
+            }
+                
+        except json.JSONDecodeError as json_err:
+            print(f"JSON extraction failed: {json_err}")
+            # Return a more user-friendly error with the raw response for debugging
+            return {
+                "message": "I couldn't process your request as expected.",
+                "data": []
+            }
+            
     except Exception as e:
         print(f"Error: {str(e)}")
         return Response(f"An error occurred: {str(e)}", status=500)
 
-    
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5001)
