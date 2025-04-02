@@ -50,12 +50,12 @@ def find_company_by_name(name, companies):
             return ticker
     return None
 
-def query_dynamo(date, symbol):
+def query_dynamo(symbol, date):
     """
     Query DynamoDB for a given date and symbol.
     """
     try:
-        print("Date:", date, "'symbol': ", symbol)
+        print("Date:", date, "Symbol: ", symbol)
         response = equity_table.get_item(Key={'ds': date, 'symbol': symbol})
         if 'Item' in response:
             return response['Item']
@@ -67,14 +67,14 @@ def query_dynamo(date, symbol):
         logger.error(f"Failed to query DynamoDB: {e}")
         return None
     
-def fetch_data_from_dynamo(symbols, date):
+def  fetch_data_from_dynamo(symbols, date):
     """
     Fetch data from DynamoDB for the given symbols and date.
     """
     results = []
     for symbol in symbols:
         print("Fetching data for symbol:", symbol)
-        result = query_dynamo(date, symbol)
+        result = query_dynamo(symbol, date)
         if result is not None:
             results.append(result)
     return results
