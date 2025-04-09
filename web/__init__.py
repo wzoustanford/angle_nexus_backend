@@ -62,12 +62,13 @@ def query_dynamo(symbol, date):
         else:
             print(f"No item found for date: {date}, symbol: {symbol}")
             print('RESPONSEEEEE', response)
-            return None
+            # return None
+            return {"msg": f"No data found for {symbol} on {date}"}
     except ClientError as e:
         logger.error(f"Failed to query DynamoDB: {e}")
         return None
     
-def  fetch_data_from_dynamo(symbols, date):
+def fetch_data_from_dynamo(symbols, date):
     """
     Fetch data from DynamoDB for the given symbols and date.
     """

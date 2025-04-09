@@ -1,7 +1,7 @@
 import json
 import logging
 import decimal
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from flask import Response, request, jsonify
 from pydantic import ValidationError
 
@@ -160,8 +160,11 @@ def chat():
         print(f"Processing classification chat completion with {model}...")
         classification_response_text = chat_client.create_chat_completion(classification_messages)
 
+        print(f"Classification response: {classification_response_text}")
+
         # Extract symbols from the classification response
         symbols = []
+        user_intent = ""
         try:
             if "{" in classification_response_text and "}" in classification_response_text:
                 json_start = classification_response_text.find('{')
@@ -169,12 +172,15 @@ def chat():
                 if json_start >= 0 and json_end > json_start:
                     classification_response = json.loads(classification_response_text[json_start:json_end])
                     symbols = list(classification_response.get('symbols', []))
+                    user_intent = classification_response.get('message', '')
         except json.JSONDecodeError as json_err:
             print(f"Classification JSON extraction failed: {json_err}")
 
-        if not symbols:
+        print('User Intent:', user_intent)
+
+        if not user_intent: #symbols:
             return {
-                "message": "Classification did not return any symbols.",
+                "message": "Unable to process your request",
                 "data": []
             }
 
@@ -182,24 +188,28 @@ def chat():
         # Call DynamoDB to fetch company details using the returned symbols.
         dynamo_response = fetch_data_from_dynamo(symbols, today_date.isoformat())
 
-        # Validate that each item has both 'name' and 'symbol'
-        valid_dynamo_response = []
-        for item in dynamo_response:
-            if isinstance(item, dict) and "name" in item and "symbol" in item:
-                valid_dynamo_response.append(item)
-
-        # If no valid data found in DynamoDB, return an error message
-        if not valid_dynamo_response:
-            return {
-                "message": "Unable to process your request", 
-                "data": []
-            }
+        keys_to_remove = ['chart', 'ttl_timestamp']
 
         # Convert Decimal objects in the DynamoDB data
-        converted_data = convert_decimals(valid_dynamo_response)
+        # converted_data = convert_decimals(valid_dynamo_response)
+        
+        converted_data = convert_decimals(dynamo_response)
+        full_converted_data = convert_decimals(dynamo_response)
+        # Iterate over each object in the list and remove keys in the list
+        for item in converted_data:
+            for key in keys_to_remove:
+                item.pop(key, None)  
 
+        # If the item is a dictionary, remove the 'key' key if it exists
         # Final widget phase (example from previous refactored code)
-        final_user_message = f"DynamoDB Data: {json.dumps(converted_data)}"
+        final_user_message = f"""Based on the user intention {user_intent} \n and the DynamoDB Data: {json.dumps(converted_data)}"""
+        # Specify the file name where you want to save the text
+        file_name = "output.txt"
+
+        # Open the file in write mode and save the message
+        with open(file_name, "w") as file:
+            file.write(final_user_message)
+
         final_messages = [
             {"role": "system", "content": widget_sys_prompt()},
             {"role": "user", "content": final_user_message}
@@ -221,7 +231,7 @@ def chat():
 
         return {
             "message": final_message,
-            "data": converted_data
+            "data": full_converted_data
         }
 
     except Exception as e:
@@ -229,7 +239,7 @@ def chat():
 
 
 @app.route('/fetch_data', methods=['POST'])
-def query_dynamo():
+def fetch_dynamo_data():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No input data provided'}), 400
