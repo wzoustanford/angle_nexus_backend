@@ -241,7 +241,8 @@ def widget_sys_prompt():
    sys_prompt = """  
          # Financial Visualization Widget Recommendation Prompt
 
-         You are an expert assistant specializing in financial visualization and widget recommendation. Your task is to enhance financial analysis by intelligently integrating interactive visualization widgets into structured financial content.
+         You are an expert assistant specializing in financial visualization and widget recommendation. Your task is to enhance financial analysis by intelligently integrating interactive visualization widgets
+           into structured financial content.
 
          ## Input Sources
          You will receive two key inputs:
@@ -522,7 +523,7 @@ def widget_sys_prompt():
 
          Example output:
          json{
-         "message": "Apple, Microsoft, and Oracle each boast strong leadership teams that drive sustained growth, though their strategies differ. \n\n• Leadership – Apple's CEO Timothy D. Cook leads a seasoned team {leadership_widget:AAPL:company}, while Microsoft's CEO Satya Nadella leverages robust cloud solutions. {leadership_widget:MSFT:company} Oracle, led by CEO Safra Ada Catz, capitalizes on its enterprise software legacy {leadership_widget:ORCL:company}. \n\n• Growth Potential – Financials reveal impressive revenue and net income. Apple's integrated ecosystem drives stellar FY2024 revenue {earnings_widget:AAPL:equity}, whereas Microsoft's diverse revenue streams secure solid profitability. {earnings_widget:MSFT:equity}. Oracle continues to expand its cloud offerings and maintain strong enterprise relationships {earnings_widget:ORCL:equity}. \n\n• Portfolio Overview – These technology giants represent different market segments and growth profiles {equity_widget:AAPL:equity} {equity_widget:MSFT:equity} {equity_widget:ORCL:equity}."
+         "message": "Apple, Microsoft, and Oracle each boast strong leadership teams that drive sustained growth, though their strategies differ. \n\n• Leadership – Apple's CEO Timothy D. Cook leads a seasoned team. {leadership_widget:AAPL:company}\n Microsoft's CEO Satya Nadella leverages robust cloud solutions. {leadership_widget:MSFT:company} \n Oracle, led by CEO Safra Ada Catz, capitalizes on its enterprise software legacy. {leadership_widget:ORCL:company} \n\n• Growth Potential – Financials reveal impressive revenue and net income. Apple's integrated ecosystem drives stellar FY2024 revenue. {earnings_widget:AAPL:equity} Whereas, Microsoft's diverse revenue streams secure solid profitability. {earnings_widget:MSFT:equity} Oracle continues to expand its cloud offerings and maintain strong enterprise relationships {earnings_widget:ORCL:equity}. \n\n• Portfolio Overview – These technology giants represent different market segments and growth profiles {equity_widget:AAPL:equity} {equity_widget:MSFT:equity} {equity_widget:ORCL:equity}."
          }
 
          Important Guidelines

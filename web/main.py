@@ -1,4 +1,5 @@
 import json
+import copy
 import logging
 import decimal
 from datetime import date, datetime, timedelta
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 model = "o3-mini"  # Options: "o3-mini" or "deepseek-reasoner"
 chat_client = ReasoningChatClient(model=model)
-ALLOWED_MODELS = ["o3-mini", "GPT-4o","deepseek-reasoner","o1","o1-mini"]# allowed models
+ALLOWED_MODELS = ["o3-mini", "GPT-4o","deepseek-reasoner","o1","o1-mini"] # allowed models
 
 
 def convert_decimals(obj):
@@ -35,6 +36,22 @@ def convert_decimals(obj):
         return int(obj) if obj % 1 == 0 else float(obj)
     else:
         return obj
+
+def parse_json_from_text(text: str) -> dict:
+    """
+    Attempts to extract and parse a JSON object from a text string.
+    Returns the dictionary if successful or None if parsing fails.
+    """
+    try:
+        if "{" in text and "}" in text:
+            json_start = text.find('{')
+            json_end = text.rfind('}') + 1
+            json_text = text[json_start:json_end]
+            return json.loads(json_text)
+    except json.JSONDecodeError as e:
+        logging.error("JSON parsing failed: %s", e)
+    return None
+
 
 
 def weaver_chat(request):
@@ -133,110 +150,84 @@ def crypto_api():
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        # Extract user input
-        request_data = request.get_json()
-        user_input = request_data.get('message') if request_data else None
-        if not user_input:
-            return Response("No prompt provided", status=400)
-        
-        # Check for command triggers
+        # Extract and validate JSON payload from request
+        request_payload = request.get_json(force=True, silent=True)
+        if not request_payload:
+            return jsonify({"error": "Invalid JSON request"}), 400
+
+        user_message = request_payload.get('message')
+        if not user_message:
+            return jsonify({"error": "No prompt provided"}), 400
+
+        # Command trigger handling (e.g., a special keyword in the message)
         command_handlers = {
-            "/weaver": lambda: weaver_chat(request_data),
+            "/weaver": lambda: weaver_chat(request_payload),
         }
         for command, handler in command_handlers.items():
-            if command in user_input:
-                print(f"Command '{command}' detected in user input. Routing to its handler.")
+            if command in user_message:
+                logging.info("Command '%s' detected in user message. Routing to its handler.", command)
                 return handler()
 
-        today_date = date.today()
+        current_date = date.today()
 
-        # 1. Classification Phase
-        # Build classification prompt by passing user_input into classify_sys_prompt.
-        classification_prompt = classify_sys_prompt()
-        classification_messages = [
-            {"role": "system", "content": classification_prompt},
-            {"role": "user", "content": f"User input: {user_input}\nToday: {today_date}"}
+        # --- 1. Classification Phase ---
+        classification_system_prompt = classify_sys_prompt()  # Returns a system prompt string
+        classification_request = [
+            {"role": "system", "content": classification_system_prompt},
+            {"role": "user", "content": f"User input: {user_message}\nToday: {current_date}"}
         ]
-        print(f"Processing classification chat completion with {model}...")
-        classification_response_text = chat_client.create_chat_completion(classification_messages)
+        logging.info("Processing classification chat completion with model: %s", model)
+        classification_response_str = chat_client.create_chat_completion(classification_request)
+        logging.info("Classification response received: %s", classification_response_str)
 
-        print(f"Classification response: {classification_response_text}")
+        classification_json = parse_json_from_text(classification_response_str)
+        if classification_json:
+            extracted_symbols = list(classification_json.get('symbols', []))
+            user_intent = classification_json.get('message', '')
+        else:
+            extracted_symbols = []
+            user_intent = ""
 
-        # Extract symbols from the classification response
-        symbols = []
-        user_intent = ""
-        try:
-            if "{" in classification_response_text and "}" in classification_response_text:
-                json_start = classification_response_text.find('{')
-                json_end = classification_response_text.rfind('}') + 1
-                if json_start >= 0 and json_end > json_start:
-                    classification_response = json.loads(classification_response_text[json_start:json_end])
-                    symbols = list(classification_response.get('symbols', []))
-                    user_intent = classification_response.get('message', '')
-        except json.JSONDecodeError as json_err:
-            print(f"Classification JSON extraction failed: {json_err}")
-
-        print('User Intent:', user_intent)
-
-        if not user_intent: #symbols:
-            return {
+        logging.info("User Intent: %s", user_intent)
+        if not user_intent:
+            return jsonify({
                 "message": "Unable to process your request",
                 "data": []
-            }
+            }), 200
 
-        # 2. DynamoDB Data Fetch
-        # Call DynamoDB to fetch company details using the returned symbols.
-        dynamo_response = fetch_data_from_dynamo(symbols, today_date.isoformat())
+        # --- 2. DynamoDB Data Fetch ---
+        dynamo_data = fetch_data_from_dynamo(extracted_symbols, current_date.isoformat())
+        widget_data = convert_decimals(dynamo_data)
+        full_widget_data = copy.deepcopy(widget_data)
 
         keys_to_remove = ['chart', 'ttl_timestamp']
-
-        # Convert Decimal objects in the DynamoDB data
-        # converted_data = convert_decimals(valid_dynamo_response)
-        
-        converted_data = convert_decimals(dynamo_response)
-        full_converted_data = convert_decimals(dynamo_response)
-        # Iterate over each object in the list and remove keys in the list
-        for item in converted_data:
+        for item in widget_data:
             for key in keys_to_remove:
-                item.pop(key, None)  
+                item.pop(key, None)
 
-        # If the item is a dictionary, remove the 'key' key if it exists
-        # Final widget phase (example from previous refactored code)
-        final_user_message = f"""Based on the user intention {user_intent} \n and the DynamoDB Data: {json.dumps(converted_data)}"""
-        # Specify the file name where you want to save the text
-        file_name = "output.txt"
+        # --- 3. Final Widget Phase ---
+        final_prompt_message = (
+            f"Based on the user intention {user_intent}\n"
+            f"and the DynamoDB Data: {json.dumps(widget_data)}"
+        )
 
-        # Open the file in write mode and save the message
-        with open(file_name, "w") as file:
-            file.write(final_user_message)
-
-        final_messages = [
+        widget_request = [
             {"role": "system", "content": widget_sys_prompt()},
-            {"role": "user", "content": final_user_message}
+            {"role": "user", "content": final_prompt_message}
         ]
-        final_response_text = chat_client.create_chat_completion(final_messages)
+        final_response_str = chat_client.create_chat_completion(widget_request)
 
-        # Extract final message and return the response
-        try:
-            if "{" in final_response_text and "}" in final_response_text:
-                json_start = final_response_text.find('{')
-                json_end = final_response_text.rfind('}') + 1
-                if json_start >= 0 and json_end > json_start:
-                    final_response = json.loads(final_response_text[json_start:json_end])
-                    final_message = final_response.get('message', final_response_text)
-            else:
-                final_message = final_response_text
-        except json.JSONDecodeError as json_err:
-            final_message = final_response_text
+        final_json = parse_json_from_text(final_response_str)
+        final_message = final_json.get('message') if final_json and 'message' in final_json else final_response_str
 
-        return {
+        return jsonify({
             "message": final_message,
-            "data": full_converted_data
-        }
+            "data": full_widget_data
+        }), 200
 
-    except Exception as e:
-        return Response(f"An error occurred: {str(e)}", status=500)
-
+    except Exception as exc:
+        logging.exception("An error occurred in /chat endpoint.")
+        return jsonify({"error": f"An error occurred: {str(exc)}"}), 500
 
 @app.route('/fetch_data', methods=['POST'])
 def fetch_dynamo_data():
