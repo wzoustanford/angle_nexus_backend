@@ -17,20 +17,6 @@ dotenv_path = os.path.join(script_dir, '../.env')
 # Load the .env file
 load_dotenv(dotenv_path=dotenv_path)
 
-# -----------------------------------------------------------------------------
-# Configure logging (write to file and console)
-# -----------------------------------------------------------------------------
-# log_file_path = os.path.join(script_dir, 'app.log')
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s - %(levelname)s - %(message)s',
-#     handlers=[
-#         logging.FileHandler(log_file_path, mode='a'),
-#         logging.StreamHandler()
-#     ]
-# )
-# logger = logging.getLogger(__name__)
-
 # Download the NLTK stopwords
 nltk.download("stopwords")
 
