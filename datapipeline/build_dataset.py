@@ -621,8 +621,6 @@ class BuildDataset:
     #     self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
     #     print("done")
 
-    import os
-
     def export_tables(self, postfix): 
         print("Exporting tables...")
         
