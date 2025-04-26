@@ -3,6 +3,7 @@ build a first dataset using pandas and rest api
 1. financialmodelingprep.com 
 2. build csv's with pandas 
 """ 
+
 import os
 import math
 import boto3
@@ -16,6 +17,7 @@ from math import floor, ceil, isnan
 import pandas as pd, requests, json
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import csv
 
 # Load environment variables from the .env file
 load_dotenv(dotenv_path='../.env')
@@ -193,6 +195,7 @@ class BuildDataset:
             pass
             #remove_old_equity_records(self.equity_table, self.retention_days, exchange)
             #remove_old_equity_records(self.equity_price_table, self.retention_days, exchange)
+
 
     def equity_put_item(self, table, item):
         tries = 0
@@ -617,8 +620,6 @@ class BuildDataset:
     #     self.table_nasdaq.to_csv(os.path.join(root_data_dir, "./nasdaq_exported_table_" + postfix + ".csv"))
     #     self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
     #     print("done")
-
-    import os
 
     def export_tables(self, postfix): 
         print("Exporting tables...")
