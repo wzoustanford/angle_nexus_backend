@@ -17,3 +17,5 @@ angle_env/
 *.log
 aivenv
 ticker_exchange.csv
+
+cache/

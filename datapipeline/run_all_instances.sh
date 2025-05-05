@@ -1,45 +1,61 @@
 #!/bin/bash
-for i in {0..11}
+
+# ========== CONFIGURATION ==========
+# Total number of worker tasks to run
+total_workers=12
+
+# Max concurrent workers (capped)
+max_allowed=8
+detected_cores=$(nproc)
+max_concurrent=$(( detected_cores < max_allowed ? detected_cores : max_allowed ))
+
+# Log file location (persisted outside Docker)
+# log_dir="/app/logs"
+log_dir="./logs"
+mkdir -p "$log_dir"
+log_file="$log_dir/worker_run.log"
+
+# Telegram Bot
+BOT_TOKEN="8087474387:AAEFYyAm1qLC2yKLBSt1ea9uLFtgl-9-RLs"
+CHAT_ID="5815360770"
+
+send_telegram() {
+    message="$1"
+    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+    -d chat_id="$CHAT_ID" \
+    -d text="$message" > /dev/null
+}
+
+# ========== SCRIPT START ==========
+echo "==== New Run: $(date) ====" >> "$log_file"
+echo "Detected $detected_cores cores. Using max $max_concurrent concurrent workers." | tee -a "$log_file"
+
+send_telegram "🔄 Worker job started at $(date)\nRunning $total_workers workers (max $max_concurrent concurrently)."
+
+start_time=$(date +%s)
+echo "Started at: $(date)" | tee -a "$log_file"
+
+# ========== LAUNCH WORKERS ==========
+for i in $(seq 0 $((total_workers - 1)))
 do
-    echo "Starting worker index $i out of 12."    
-    # Launch the script concurrently without logging:
-    python3 test_build_dataset.py -wi "$i" -ns 12 &
+    echo "[$(date)] Starting worker $i of $total_workers..." | tee -a "$log_file"
+    # sleep 15
+    python3 test_build_dataset.py -wi "$i" -ns "$total_workers" >> "$log_file" 2>&1 &
+
+    if (( i % max_concurrent == max_concurrent - 1 )); then
+        wait
+    fi
 done
 
-# Wait for all background processes to finish.
+# Final wait for any remaining
 wait
-echo "All worker instances have completed."
 
-# #!/bin/bash
+end_time=$(date +%s)
+duration=$(( end_time - start_time ))
 
-# echo "------ Script started at $(date) ------"
+echo "Finished at: $(date)" | tee -a "$log_file"
+echo "Total duration: ${duration}s" | tee -a "$log_file"
+echo "==== End Run ====" >> "$log_file"
 
-# cd /home/ubuntu/angle_backend || exit 1
-# echo "Changed to project root"
-
-# # Activate virtualenv
-# source env/bin/activate
-# echo "Virtual environment activated"
-
-# # Load .env variables
-# export $(cat .env | xargs)
-# echo ".env loaded"
-
-# cd datapipeline || exit 1
-# echo "Changed to datapipeline dir"
-
-# # Start workers and log each individually
-# for i in {0..11}
-# do
-#     echo "Starting worker index $i at $(date)..."
-#     python test_build_dataset.py -wi "$i" -ns 12 >> worker_$i.log 2>&1 &
-    
-#     # Wait every 2 workers
-#     if (( (i+1) % 2 == 0 )); then
-#         echo "Waiting for batch to finish..."
-#         wait
-#     fi
-# done
-
-# wait
-# echo "------ Script finished at $(date) ------"
+send_telegram "✅ Worker job finished at $(date).\nDuration: ${duration}s."
+# ========== END OF SCRIPT ==========
