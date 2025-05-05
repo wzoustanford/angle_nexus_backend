@@ -11,7 +11,7 @@ from .logging_config import logger
 from . import fetch_data_from_dynamo
 from .utils.util import *
 from .prompts.prompts import *
-from .apis.fmp_api import get_finance_api_data
+from .apis.fmp_api import RateLimiter, get_finance_api_data
 from .models.model import ChatRequest
 from .apis.reasoning import ReasoningChatClient
 
@@ -145,7 +145,8 @@ def fetch_data(key, api_url):
     Helper for concurrency-based data fetch.
     """
     logger.debug("Fetching data for key='%s' from URL='%s'", key, api_url)
-    response = get_finance_api_data(api_url)
+    rate_limiter = RateLimiter(calls_per_minute=280) 
+    response = get_finance_api_data(api_url, rate_limiter)
     return key, response
 
 @app.after_request
