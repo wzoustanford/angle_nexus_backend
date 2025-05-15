@@ -5,7 +5,7 @@
 total_workers=12
 
 # Max concurrent workers (capped)
-max_allowed=8
+max_allowed=4
 detected_cores=$(nproc)
 max_concurrent=$(( detected_cores < max_allowed ? detected_cores : max_allowed ))
 

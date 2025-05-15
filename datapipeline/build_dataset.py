@@ -3,12 +3,10 @@ build a first dataset using pandas and rest api
 1. financialmodelingprep.com 
 2. build csv's with pandas 
 """ 
-import re
+
 import os
 import math
 import boto3
-import logging
-import time
 from time import sleep 
 import cryptowatch as cw
 from dynabodb_funcs import *
@@ -19,56 +17,14 @@ from math import floor, ceil, isnan
 import pandas as pd, requests, json
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from collections import deque
-import threading
-from datetime import datetime, timedelta
-from typing import Optional
-import atexit
+import csv
 
 # Load environment variables from the .env file
 load_dotenv(dotenv_path='../.env')
 
-# Setup logging at the module level
-logging.basicConfig(
-    filename='fmp_api_queries.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
 # Ensure the data directory exists
 root_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 os.makedirs(root_data_dir, exist_ok=True)
-
-
-class RateLimiter:
-    """ Rate limiter to ensure we don't exceed 300 API calls per minute to FMP """
-    
-    def __init__(self, calls_per_minute=280):
-        self.calls_per_minute = calls_per_minute
-        self.call_timestamps = deque()
-        self.lock = threading.Lock()
-        
-    def wait_if_needed(self):
-        """ Wait if we're approaching the rate limit """
-        with self.lock:
-            now = datetime.now()
-            
-            # Remove timestamps older than 1 minute
-            while self.call_timestamps and self.call_timestamps[0] < now - timedelta(minutes=1):
-                self.call_timestamps.popleft()
-            
-            # If we are at the limit, wait until the oldest call is more than 1 minute ago
-            if len(self.call_timestamps) >= self.calls_per_minute:
-                sleep_time = (self.call_timestamps[0] + timedelta(minutes=1) - now).total_seconds()
-                if sleep_time > 0:
-                    print(f"Rate limit approaching! Waiting for {sleep_time:.2f} seconds...")
-                    # Release the lock while sleeping
-                    self.lock.release()
-                    time.sleep(sleep_time)
-                    self.lock.acquire()
-            
-            # Record this call
-            self.call_timestamps.append(now)
 
 # JSON encoder class to convert to decimal
 class JSONEncoder(json.JSONEncoder):
@@ -93,40 +49,6 @@ class BuildDataset:
         self.chart_datapoints = 250
         self.chart_datapoints_sm = 50
         self.unitnames = ['','K','M','B','T']
-
-        num_workers = int(os.getenv('TOTAL_WORKERS', 8))
-        calls_each = max(1, 250 // num_workers)
-        logging.info(f"MAX_API_CALLS {calls_each}  ")
-        self.rate_limiter = RateLimiter(calls_per_minute=calls_each)
-
-        # Set up the rate limiter
-        # self.rate_limiter = RateLimiter(calls_per_minute=250)
-        self._price_cache: dict[tuple[str, str], list] = {}
-        
-        # running total of downloaded bytes
-        self.bytes_downloaded: int = 0
-
-        # register end-of-run logger exactly once (per process)
-        atexit.register(self._log_download_totals)
-        
-        # where to store cached JSON responses
-        self.cache_dir = os.path.join( os.path.dirname(os.path.abspath(__file__)), '..', 'cache' )
-        os.makedirs(self.cache_dir, exist_ok=True)
-
-        # how long (in days) to cache each category
-        self.cache_ttl_days = {
-            'profile': 30,
-            'income-statement': 7,
-            'balance-sheet-statement': 7,
-            'cash-flow-statement': 7,
-            'income-statement-growth': 7,
-            'historical-price-full/stock_dividend': 30,
-            'historical-price-full': 7,
-            'quote': 7,
-            'historical-chart/1hour': 2,
-        }
-
-
         """
         profile; quote; key-executives; income-statement; balance-sheet-statement; cash-flow-statement; 
         income-statement-growth; ratios-ttm; ratios; enterprise-values; key-metrics-ttm; key-metrics; 
@@ -171,50 +93,8 @@ class BuildDataset:
         self.crypto_table = create_crypto_db_table(self.db)
         # Create crypto price dynamodb table 
         self.crypto_price_table = create_crypto_price_db_table(self.db)
+        
 
-    def _get_cache_path(self, ticker: str, category: str, period: str = '') -> str:
-        """Build a safe JSON‐cache filename per ticker/category/period."""
-        cat = category.replace('/', '_').replace('-', '_')
-        per = f"_{period}" if period else ''
-        fname = f"{ticker}_{cat}{per}.json"
-        return os.path.join(self.cache_dir, fname)
-
-    def _is_cache_valid(self, path: str, category: str) -> bool:
-        """Return True if `path` exists and is younger than ttl for this category."""
-        ttl = self.cache_ttl_days.get(category, 0)
-        if ttl <= 0 or not os.path.exists(path):
-            return False
-        mtime = os.path.getmtime(path)
-        age_days = (datetime.now() - datetime.fromtimestamp(mtime)).days
-        return age_days < ttl
-
-    def _load_cache(self, path: str):
-        """Load a cached JSON blob."""
-        with open(path, 'r') as f:
-            return json.load(f)
-
-    def _save_cache(self, path: str, data):
-        """Write response data (Python list/dict) to cache as JSON."""
-        try:
-            with open(path, 'w') as f:
-                json.dump(data, f, cls=JSONEncoder)
-        except Exception as e:
-            logging.warning(f"Failed to write cache {path}: {e}")
-
-
-    def _log_download_totals(self):
-        """Write one final ‘totals’ entry to the log on normal exit."""
-        mib = self.bytes_downloaded / (1024 * 1024)
-        logging.info(f"TOTAL_NETWORK_BYTES {self.bytes_downloaded}  "
-                     f"({mib:0.2f} MiB)  –  end of run")
-
-    def _sanitize_url(self, url):
-        """
-        Remove the apikey=… parameter from a URL, preserving everything else.
-        Works whether it's the first query-param or not.
-        """
-        return re.sub(r'([?&])apikey=[^&]+(&|$)', r'\1[REDACTED]\2', url)
-    
     def get_crypto_base_table(self, params):
         """ Builds the crypto base table from a single coinmarketcap data point """
         # (1) Query API and rank by market cap to get the top 2000 coins
@@ -603,6 +483,14 @@ class BuildDataset:
                         len(data_1m), len(data_6m), len(data_1y),
                         len(data_all), len(data_1y_sm)))
 
+    def get_ipo_date_old(self, ticker, years_ago):
+        """ return the oldest date from from the historic price data """
+        period = self.get_dates_period(years_ago)
+        data = self.query_fmp_api(ticker, 'historical-price-full', period)
+        last_row = data[-1]
+        ipo_date = last_row.get('date') or datetime.now().strftime("%Y-%m-%d")
+        return ipo_date
+
     def get_ipo_date(self, ticker):
         """ return the oldest date from from the historic price data """
         data_rows = self.query_fmp_api(ticker, 'historical-price-full', 'serietype=line')
@@ -620,45 +508,15 @@ class BuildDataset:
         dates_period = f'from={from_date}&to={to_date}'
         return dates_period
 
-    def get_historic_price_data(self, ticker: str, interval: str, ipo_date: Optional[str] = None):
-        """
-        Return historic-price data for `ticker`.
-        Uses an in-memory cache plus query-string trimming to
-        reduce both call-count and payload size.
-
-        Parameters
-        ----------
-        ticker : str
-            Stock symbol, e.g. 'AAPL'
-        interval : str
-            Either '1hour' or 'daily'
-        ipo_date : str | None
-            Earliest date we care about for daily data (YYYY-MM-DD).
-        """
-        cache_key = (ticker, interval)
-        if cache_key in self._price_cache:
-            return self._price_cache[cache_key]
-
-        # Respect the global rate limiter
-        self.rate_limiter.wait_if_needed()
-
-        if interval == '1hour':
-            # Last 168 hourly candles ≈ one trading week
-            qs = 'timeseries=168'
-            data = self.query_fmp_api(ticker, f'historical-chart/{interval}', qs)
-
-        elif interval == 'daily':
-            qs_parts = ['serietype=line']  
-            if ipo_date:
-                qs_parts.append(f'from={ipo_date}')
-            qs = '&'.join(qs_parts)
-            data = self.query_fmp_api(ticker, 'historical-price-full', qs)
-
-        else:
-            raise ValueError("interval must be either '1hour' or 'daily'")
-
-        data = data or []        
-        self._price_cache[cache_key] = data
+    def get_historic_price_data(self, ticker, type, ipo_date=None):
+        """"""
+        if type == '1hour':
+            data = self.query_fmp_api(ticker, 'historical-chart/1hour')
+        elif type == 'daily':
+            date_period = "from={}".format(ipo_date) if ipo_date else ''
+            data = self.query_fmp_api(ticker, 'historical-price-full', date_period)
+        if not data:
+            data = []
         return data
 
     def subsample_historic_price_data(self, data_rows, period_type,\
@@ -744,7 +602,24 @@ class BuildDataset:
                 partial_data.append(data_dict)
 
         return partial_data
+
     
+    def query_build_exchange_table_col_by_col(self, table):
+        """ build a table for one exchange """
+        for category in self.cat_and_field_dict: 
+            for field in self.cat_and_field_dict[category]: 
+                col_name =  field + "__" + category
+                col_name = col_name.replace('-', '_')
+                self.query_and_add_col_to_table(table, category, field, col_name) 
+        self.compute_derived_data(table)
+    
+    # def export_tables(self, postfix): 
+    #     print(f"exporting tables...") 
+    #     # self.table_nasdaq.to_csv("./data/nasdaq_exported_table_" + postfix + ".csv")
+    #     # self.table_nyse.to_csv("./data/nyse_exported_table_" + postfix + ".csv")
+    #     self.table_nasdaq.to_csv(os.path.join(root_data_dir, "./nasdaq_exported_table_" + postfix + ".csv"))
+    #     self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
+    #     print("done")
 
     def export_tables(self, postfix): 
         print("Exporting tables...")
@@ -885,65 +760,49 @@ class BuildDataset:
             col_name += str(len(table.columns))
         table[col_name] = col_data 
         print("done")
-
+        
     def query_fmp_api(self, ticker: str, category: str, period=''):
-        # Serve from cache
-        cache_path = self._get_cache_path(ticker, category, period)
-        if self._is_cache_valid(cache_path, category):
-            logging.info(f"Cache HIT  | {category} | {ticker} | {period}")
-            return self._load_cache(cache_path)
-        logging.info(f"Cache MISS | {category} | {ticker} | {period}")
 
+        """
+        compose the full URL 
+        """ 
         rest_url = self.url_pref + category + "/" + ticker + self.url_post
         if category == 'historical-price-full/stock_dividend':
+            # Do nothing
             pass
         elif ('year' in period or 'quarter' in period):
             rest_url = rest_url + f'&period={period}'
         else:
             rest_url = rest_url + f'&{period}'
-
-        # sanitized_url =  rest_url 
-        sanitized_url =  self._sanitize_url(rest_url)
-
-        # Log the sanitized URL
-        logging.info(f"REST URL: {rest_url}")
-        # logging.info(f"REST URL: {sanitized_url}")
-        print(sanitized_url)
-
-        # ✅ Wait based on rate limiter
-        self.rate_limiter.wait_if_needed()
-
+        print(rest_url)
+        
+        """ rate limit for querying FMP
+        """ 
+        self.fmp_last_submit_time 
+        micro_per_second = 1000000.0 
+        required_interval_sec = 60.0 / self.fmp_requests_per_minute 
+        if datetime.now() - self.fmp_last_submit_time < timedelta(seconds = required_interval_sec): 
+            sleep_sec = (self.fmp_last_submit_time + timedelta(seconds = required_interval_sec) - datetime.now()).total_seconds()
+            print(f"sleeping for {sleep_sec} sec") 
+            sleep(sleep_sec) 
+        
         tries = 0
-        response = None
-        while tries < 3:
-            try:
-                response = requests.get(rest_url, timeout=10)
-            except BaseException as err:
-                logging.warning(
-                    f"Query timeout on try {tries+1} for {sanitized_url} – {err}"
-                )
-                response = None
-
-            if response and response.content:
-                size_bytes = len(response.content)
-                size_mb = size_bytes / (1024 * 1024)
-                # add to run‑total and log this call
-                self.bytes_downloaded += size_bytes
-                print(
-                    f"RESPONSE {sanitized_url}  bytes={size_bytes}  mb={size_mb:.2f}"
-                )
-                logging.info(
-                    f"RESPONSE {sanitized_url}  bytes={size_bytes}  mb={size_mb:.2f}"
-                )
-                break
-
-            time.sleep(2)
+        while tries < 3: 
+            try: 
+                response = requests.get(rest_url, timeout=10) 
+            except BaseException as err: 
+                print("Query timedout: -- ") 
+                print(err)
+                response = None 
+            if response and len(response.json()) != 0: 
+                break 
+            sleep(2) 
             tries += 1
-
+        
+        #response = requests.get(rest_url) 
         if not response or len(response.json()) == 0:
-            logging.error(f"Failed to get valid response for {rest_url} after {tries} tries")
             return None
-
+        
         if period == 'year' and category != 'historical-price-full/stock_dividend':
             res = response.json()[:self.istmnt_years]
         elif period == 'quarter' and category != 'historical-price-full/stock_dividend':
@@ -952,22 +811,13 @@ class BuildDataset:
             res = response.json().get('historical')
         elif category.startswith('historical-chart'):
             res = response.json()
-        elif category == 'historical-price-full/stock_dividend':
+        elif category in ['historical-price-full/stock_dividend']:
             res = response.json().get('historical')
         else:
             res = response.json()[0]
 
-        logging.info(f"Queried FMP API | Ticker: {ticker} | Category: {category}")
-        print(f"-- Queried FMP API, ticker: {ticker};  category: {category}") 
-
-        # Save to cache if this category is cacheable 
-        if category in self.cache_ttl_days and res is not None:
-            try:
-                self._save_cache(cache_path, res)
-                logging.info(f"Saved cache  | {category} | {ticker} | {period}")
-            except Exception:
-                pass
-        return res
+        print("-- Queried FMP API, ticker: " + ticker + ";  category: " + category) 
+        return res 
 
     def query_cryptoapi(self, url, headers):
         """ This function queries the Cryptos APIs
@@ -1483,4 +1333,3 @@ class BuildDataset:
             out_num2 = num2_without_unit
 
         return (out_num1, out_num2, num2_unit)
-
