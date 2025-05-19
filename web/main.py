@@ -1,14 +1,16 @@
+import os
 import json
 import copy
 import decimal
 from datetime import date, datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
 from flask import Response, request, jsonify
 from pydantic import ValidationError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from web import create_app, iSearch, iCryptoSearch
 from .logging_config import logger 
-from . import fetch_data_from_dynamo
+from . import fetch_data_from_dynamo, fetch_company_news
 from .utils.util import *
 from .prompts.prompts import *
 from .apis.fmp_api import get_finance_api_data
@@ -268,6 +270,63 @@ def chat():
     except Exception as exc:
         logger.exception("An error occurred in /chat endpoint.")
         return jsonify({"error": f"An error occurred: {str(exc)}"}), 500
+
+@app.route("/news", methods=["POST"])
+def news():
+    """Accept JSON {"message": "..."}, extract tickers, return combined news.
+
+    Returns 400 if the payload is missing / malformed, 200 with {"news": [...]}
+    where each element is exactly what Finnhub returned plus a `symbol` field.
+    """
+    # Validate request 
+    request_payload = request.get_json(force=True, silent=True)
+    if not request_payload:
+        logger.warning("No JSON payload provided in /news request.")
+        return jsonify({"error": "Invalid JSON request"}), 400
+
+    user_message = request_payload.get("message")
+    if not user_message:
+        logger.warning("No 'message' found in /news request payload.")
+        return jsonify({"error": "No prompt provided"}), 400
+
+    # Classify & extract symbols 
+    current_date = date.today()
+
+    classification_sys_prompt = classify_sys_prompt()
+    classification_request = [
+        {"role": "system", "content": classification_sys_prompt},
+        {
+            "role": "user",
+            "content": f"User input: {user_message}\nToday: {current_date.isoformat()}",
+        },
+    ]
+    logger.info("Processing classification with model='%s'", os.getenv("OPENAI_MODEL", "gpt-4o"))
+
+    classification_response_str = chat_client.create_chat_completion(classification_request)
+    logger.info("Classification response received: %s", classification_response_str)
+
+    classification_json = parse_json_from_text(classification_response_str)
+    extracted_symbols: list[str] = list(classification_json.get("symbols", [])) if classification_json else []
+
+    if not extracted_symbols:
+        logger.info("No symbols found in user input – returning early.")
+        return jsonify({"news": [], "message": "No tickers recognised."}), 200
+
+    #  Pull Finnhub news in parallel 
+    date_to = current_date.isoformat()
+    # Last 30days;
+    date_from = (current_date - timedelta(days=30)).isoformat()
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        all_news_lists = list(pool.map(lambda s: fetch_company_news(s, date_from, date_to), extracted_symbols))
+
+    # flatten & sort
+    flat_news: list[dict] = [item for sub in all_news_lists for item in sub]
+    flat_news.sort(key=lambda x: (x.get("datetime", 0), x.get("symbol")))
+
+    logger.info("Returning %d news items for %d tickers.", len(flat_news), len(extracted_symbols))
+    return jsonify({"news": flat_news}), 200
+
 
 @app.route('/fetch_data', methods=['POST'])
 def fetch_dynamo_data():
