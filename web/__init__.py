@@ -5,6 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 import nltk
+import finnhub
 from nltk.corpus import stopwords
 from .logging_config import logger 
 from search.illumenti_search import IllumentiSearch
@@ -35,6 +36,28 @@ try:
 except Exception as e:
     logger.error("Failed to initialize DynamoDB client or table: %s", e, exc_info=True)
 
+# Finnhub REST client – requires env var FINNHUB_API_KEY
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
+if not FINNHUB_API_KEY:
+    raise RuntimeError("Missing FINNHUB_API_KEY environment variable")
+
+finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+
+def fetch_company_news(symbol: str, date_from: str, date_to: str) -> list[dict]:
+    """Wrap finnhub.company_news, always returns a *list* (possibly empty).
+    Adds the originating symbol to each item so the client knows the source.
+    Swallows Finnhub errors but logs them – prevents one bad ticker from
+    breaking the whole response.
+    """
+    try:
+        raw = finnhub_client.company_news(symbol, _from=date_from, to=date_to)
+    except Exception as exc:  
+        logger.exception("Finnhub company_news failed for %s: %s", symbol, exc)
+        return []
+
+    for item in raw:
+        item["symbol"] = symbol  
+    return raw
 
 # Initialize search objects
 iSearch = IllumentiSearch()
