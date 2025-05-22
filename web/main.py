@@ -102,7 +102,6 @@ def news_chat(request_payload):
     newsresponse_str = chat_client.create_chat_completion(news_classification_request)
 
     logger.info("Returning %d news items for %d tickers.", len(flat_news), len(extracted_symbols))
-    # return jsonify({"news": flat_news}), 200
     return {"message": newsresponse_str, "news": flat_news}, 200
 
 def parse_json_from_text(text: str) -> dict:
@@ -263,7 +262,6 @@ def chat():
             logger.warning("No 'message' found in /chat request payload.")
             return jsonify({"error": "No prompt provided"}), 400
 
-        # Command trigger handling (e.g., a special keyword in the message)
         command_handlers = {
             "/weaver": lambda: weaver_chat(request_payload),
             "/news": lambda: news_chat(request_payload),
