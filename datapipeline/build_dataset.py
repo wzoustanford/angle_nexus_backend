@@ -5,8 +5,11 @@ build a first dataset using pandas and rest api
 """ 
 
 import os
+import re
 import math
 import boto3
+import logging
+import time
 from time import sleep 
 import cryptowatch as cw
 from dynabodb_funcs import *
@@ -17,14 +20,53 @@ from math import floor, ceil, isnan
 import pandas as pd, requests, json
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-import csv
+from collections import deque
+import threading
+import atexit
 
 # Load environment variables from the .env file
 load_dotenv(dotenv_path='../.env')
 
+# Setup logging at the module level
+logging.basicConfig(
+    filename='./logs/fmp_api_queries.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 # Ensure the data directory exists
 root_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 os.makedirs(root_data_dir, exist_ok=True)
+
+class RateLimiter:
+    """ Rate limiter to ensure we don't exceed 300 API calls per minute to FMP """
+    
+    def __init__(self, calls_per_minute=280):
+        self.calls_per_minute = calls_per_minute
+        self.call_timestamps = deque()
+        self.lock = threading.Lock()
+        
+    def wait_if_needed(self):
+        """ Wait if we're approaching the rate limit """
+        with self.lock:
+            now = datetime.now()
+            
+            # Remove timestamps older than 1 minute
+            while self.call_timestamps and self.call_timestamps[0] < now - timedelta(minutes=1):
+                self.call_timestamps.popleft()
+            
+            # If we are at the limit, wait until the oldest call is more than 1 minute ago
+            if len(self.call_timestamps) >= self.calls_per_minute:
+                sleep_time = (self.call_timestamps[0] + timedelta(minutes=1) - now).total_seconds()
+                if sleep_time > 0:
+                    print(f"Rate limit approaching! Waiting for {sleep_time:.2f} seconds...")
+                    # Release the lock while sleeping
+                    self.lock.release()
+                    time.sleep(sleep_time)
+                    self.lock.acquire()
+            
+            # Record this call
+            self.call_timestamps.append(now)
 
 # JSON encoder class to convert to decimal
 class JSONEncoder(json.JSONEncoder):
@@ -49,6 +91,18 @@ class BuildDataset:
         self.chart_datapoints = 250
         self.chart_datapoints_sm = 50
         self.unitnames = ['','K','M','B','T']
+
+        num_workers = int(os.getenv('TOTAL_WORKERS', 8))
+        calls_each = max(1, 250 // num_workers)
+        logging.info(f"MAX_API_CALLS {calls_each}  ")
+        self.rate_limiter = RateLimiter(calls_per_minute=calls_each)
+
+        
+        # total of downloaded bytes
+        self.bytes_downloaded = 0
+
+        # register end-of-run logger exactly once (per process)
+        atexit.register(self.log_download_totals)
         """
         profile; quote; key-executives; income-statement; balance-sheet-statement; cash-flow-statement; 
         income-statement-growth; ratios-ttm; ratios; enterprise-values; key-metrics-ttm; key-metrics; 
@@ -68,7 +122,7 @@ class BuildDataset:
         """
         self.cat_and_field_dict = { 
             "profile":["description", "ceo", "industry", "price", "currency",\
-                    "mktCap", "image", "volAvg"],
+                    "mktCap", "image", "volAvg", "ipoDate"],
             #"quote-short":["price"],
             #"historical-chart":{"30min":"close", "", "", ""},
             "quote":["pe", "change", "volume"], 
@@ -94,7 +148,18 @@ class BuildDataset:
         # Create crypto price dynamodb table 
         self.crypto_price_table = create_crypto_price_db_table(self.db)
         
-
+    def log_download_totals(self):
+        """Write one final ‘totals’ entry to the log on normal exit."""
+        mib = self.bytes_downloaded / (1024 * 1024)
+        logging.info(f"TOTAL_NETWORK_BYTES {self.bytes_downloaded} ({mib:0.2f} MiB) – end of run")
+    
+    def sanitize_url(self, url):
+        """
+        Remove the apikey=… parameter from a URL, preserving everything else.
+        Works whether it's the first query-param or not.
+        """
+        return re.sub(r'([?&])apikey=[^&]+(&|$)', r'\1[REDACTED]\2', url)
+    
     def get_crypto_base_table(self, params):
         """ Builds the crypto base table from a single coinmarketcap data point """
         # (1) Query API and rank by market cap to get the top 2000 coins
@@ -483,22 +548,13 @@ class BuildDataset:
                         len(data_1m), len(data_6m), len(data_1y),
                         len(data_all), len(data_1y_sm)))
 
-    def get_ipo_date_old(self, ticker, years_ago):
-        """ return the oldest date from from the historic price data """
-        period = self.get_dates_period(years_ago)
-        data = self.query_fmp_api(ticker, 'historical-price-full', period)
-        last_row = data[-1]
-        ipo_date = last_row.get('date') or datetime.now().strftime("%Y-%m-%d")
-        return ipo_date
-
     def get_ipo_date(self, ticker):
-        """ return the oldest date from from the historic price data """
-        data_rows = self.query_fmp_api(ticker, 'historical-price-full', 'serietype=line')
-        if data_rows:
-            last_row = data_rows[-1]
-            ipo_date = last_row.get('date') or datetime.now().strftime("%Y-%m-%d")
-        else:
-            ipo_date = '__nan__'
+        """ return the oldest date from from the ticker profile data """
+        try:
+            data = self.query_fmp_api(ticker, 'profile')
+            ipo_date = data.get('ipoDate') or datetime.now().strftime("%Y-%m-%d")
+        except:
+            ipo_date = '__nan__'  
         return ipo_date
 
     def get_dates_period(self, years):
@@ -612,14 +668,6 @@ class BuildDataset:
                 col_name = col_name.replace('-', '_')
                 self.query_and_add_col_to_table(table, category, field, col_name) 
         self.compute_derived_data(table)
-    
-    # def export_tables(self, postfix): 
-    #     print(f"exporting tables...") 
-    #     # self.table_nasdaq.to_csv("./data/nasdaq_exported_table_" + postfix + ".csv")
-    #     # self.table_nyse.to_csv("./data/nyse_exported_table_" + postfix + ".csv")
-    #     self.table_nasdaq.to_csv(os.path.join(root_data_dir, "./nasdaq_exported_table_" + postfix + ".csv"))
-    #     self.table_nyse.to_csv(os.path.join(root_data_dir, "./nyse_exported_table_" + postfix + ".csv"))
-    #     print("done")
 
     def export_tables(self, postfix): 
         print("Exporting tables...")
@@ -764,43 +812,58 @@ class BuildDataset:
     def query_fmp_api(self, ticker: str, category: str, period=''):
 
         """
-        compose the full URL 
+            compose the full URL 
         """ 
         rest_url = self.url_pref + category + "/" + ticker + self.url_post
         if category == 'historical-price-full/stock_dividend':
-            # Do nothing
             pass
         elif ('year' in period or 'quarter' in period):
             rest_url = rest_url + f'&period={period}'
         else:
             rest_url = rest_url + f'&{period}'
-        print(rest_url)
         
-        """ rate limit for querying FMP
-        """ 
-        self.fmp_last_submit_time 
-        micro_per_second = 1000000.0 
-        required_interval_sec = 60.0 / self.fmp_requests_per_minute 
-        if datetime.now() - self.fmp_last_submit_time < timedelta(seconds = required_interval_sec): 
-            sleep_sec = (self.fmp_last_submit_time + timedelta(seconds = required_interval_sec) - datetime.now()).total_seconds()
-            print(f"sleeping for {sleep_sec} sec") 
-            sleep(sleep_sec) 
-        
+        sanitized_url =  self.sanitize_url(rest_url)
+        print(sanitized_url)
+        logging.info(f"REST URL: {sanitized_url}")
+
+        # ✅ Wait based on rate limiter
+        self.rate_limiter.wait_if_needed()
         tries = 0
-        while tries < 3: 
-            try: 
-                response = requests.get(rest_url, timeout=10) 
-            except BaseException as err: 
-                print("Query timedout: -- ") 
-                print(err)
-                response = None 
-            if response and len(response.json()) != 0: 
-                break 
-            sleep(2) 
+        while tries < 3:
+            try:
+                request_size = len(rest_url.encode('utf-8'))
+                response = requests.get(rest_url, timeout=10)
+                # Get response size
+                response_size = len(response.content)
+                
+                # Estimate headers (rough approximation) 
+                # appproximate size for HTTP headers
+                estimated_headers = 500  
+                
+                # Total estimated bandwidth
+                total_bytes = request_size + response_size + estimated_headers
+                
+                if response and len(response.json()) != 0:
+                    self.bytes_downloaded += total_bytes
+                    size_mb = total_bytes / (1024 * 1024)
+                    print(f"RESPONSE {sanitized_url}  Response: {response_size} bytes Total (est): {total_bytes} bytes ({size_mb:.2f} MB)") 
+                    logging.info(f"URL {sanitized_url}  RES: {response_size}  Total bytes: {total_bytes} bytes ({size_mb:.2f} MB)")
+                    break
+                else:
+                    self.bytes_downloaded += total_bytes
+                    
+            except BaseException as err:
+                print(f"Query failed: {err}")
+                # Even failed requests consume some bandwidth
+                # bytes, typical for a failed request
+                estimated_failed_request = 2000  
+                self.bytes_downloaded += estimated_failed_request
+                
+            sleep(2)
             tries += 1
-        
-        #response = requests.get(rest_url) 
+
         if not response or len(response.json()) == 0:
+            logging.error(f"Failed to get valid response for {sanitized_url} after {tries} tries")
             return None
         
         if period == 'year' and category != 'historical-price-full/stock_dividend':
@@ -816,6 +879,7 @@ class BuildDataset:
         else:
             res = response.json()[0]
 
+        logging.info(f"Queried FMP API | Ticker: {ticker} | Category: {category}")
         print("-- Queried FMP API, ticker: " + ticker + ";  category: " + category) 
         return res 
 
@@ -1298,7 +1362,6 @@ class BuildDataset:
                         ExpressionAttributeValues={':l': latest_ds},
                         ReturnValues="UPDATED_NEW")
                 print ('{} - update_latest_ds() - {} {}'.format(now, table.name, latest_ds))
-                print('rrrr', r)
                 break
             except ClientError as error:
                 print ('Database update-item({}, {}) failure-{} for data:'\
@@ -1333,4 +1396,3 @@ class BuildDataset:
             out_num2 = num2_without_unit
 
         return (out_num1, out_num2, num2_unit)
-
