@@ -39,6 +39,72 @@ def convert_decimals(obj):
     else:
         return obj
 
+def news_chat(request_payload):
+    """
+    Process a news request by:
+     1. validating input,
+     2. classifying/extracting ticker symbols,
+     3. fetching Finnhub news in parallel,
+     4. returning a combined, sorted list of articles.
+    """
+    # Validate payload
+    user_message = request_payload.get("message")
+    print("User message: %s", user_message)
+    if not user_message:
+        logger.warning("No 'message' found in news_chat payload.")
+        return jsonify({"error": "No prompt provided"}), 400
+
+    # --- Classification & symbol extraction ---
+    current_date = date.today()
+    classification_sys_prompt = classify_sys_prompt()
+    classification_request = [
+        {"role": "system", "content": classification_sys_prompt},
+        {
+            "role": "user",
+            "content": f"User input: {user_message}\nToday: {current_date.isoformat()}",
+        },
+    ]
+    logger.info("Processing classification for news with model='%s'", os.getenv("OPENAI_MODEL", "gpt-4o"))
+    classification_response_str = chat_client.create_chat_completion(classification_request)
+    logger.info("Classification response received: %s", classification_response_str)
+
+    classification_json = parse_json_from_text(classification_response_str)
+    extracted_symbols = list(classification_json.get("symbols", [])) if classification_json else []
+
+    if not extracted_symbols:
+        logger.info("No symbols found in user input – returning early.")
+        return jsonify({"news": [], "message": "No tickers recognised."}), 200
+
+    # --- Fetch Finnhub news in parallel ---
+    date_to = current_date.isoformat()
+    date_from = (current_date - timedelta(days=5)).isoformat()
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        all_news_lists = list(
+            pool.map(lambda s: fetch_company_news(s, date_from, date_to), extracted_symbols)
+        )
+
+    # flatten & sort
+    flat_news = [item for sub in all_news_lists for item in sub]
+    flat_news.sort(key=lambda x: (x.get("datetime", 0), x.get("symbol")))
+    # print("Flattened news data: %s", flat_news[:5]) 
+
+    news_summarize = news_summarize_prompt()
+    user_message = "Summarize the news articles and classify them into categories."
+    news_classification_request = [
+        {"role": "system", "content": news_summarize},
+        {
+            "role": "user",
+            "content": f"User input: {user_message}\nToday: {current_date.isoformat()}\n news: {json.dumps(flat_news)}",
+        },
+    ]
+    # print("News classification request: %s", news_classification_request)
+    newsresponse_str = chat_client.create_chat_completion(news_classification_request)
+
+    logger.info("Returning %d news items for %d tickers.", len(flat_news), len(extracted_symbols))
+    # return jsonify({"news": flat_news}), 200
+    return {"message": newsresponse_str, "news": flat_news}, 200
+
 def parse_json_from_text(text: str) -> dict:
     """
     Attempts to extract and parse a JSON object from a text string.
@@ -192,6 +258,7 @@ def chat():
             return jsonify({"error": "Invalid JSON request"}), 400
 
         user_message = request_payload.get('message')
+        print("User message::: %s", user_message)
         if not user_message:
             logger.warning("No 'message' found in /chat request payload.")
             return jsonify({"error": "No prompt provided"}), 400
@@ -199,6 +266,7 @@ def chat():
         # Command trigger handling (e.g., a special keyword in the message)
         command_handlers = {
             "/weaver": lambda: weaver_chat(request_payload),
+            "/news": lambda: news_chat(request_payload),
         }
         for command, handler in command_handlers.items():
             if command in user_message:

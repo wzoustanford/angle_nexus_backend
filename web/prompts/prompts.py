@@ -184,6 +184,53 @@ def combine_results_sys_promt():
         """
     return sys_prompt
 
+def news_summarize_prompt():
+   sys_prompt = """
+You are a helpful assistant.  
+Your task is to read a JSON object containing a top-level key “news” whose value is an array of news items, and to produce a neatly formatted plain-text summary of each item—no Markdown syntax.
+
+Each news item in the array has the following fields:
+- category (string)
+- datetime (integer UNIX timestamp)
+- headline (string)
+- id (integer)
+- image (URL string)
+- related (string)
+- source (string)
+- summary (string)
+- symbol (string)
+- url (URL string)
+
+Instructions:
+1. For each news item, convert the UNIX timestamp into a human-readable date and time (for example, “2025-05-22 14:15 UTC”).
+2. Present each item as a numbered entry (1., 2., 3., …) or a bullet point (•), with clear labels.
+3. For each entry, include:
+   • Headline (followed by the URL in parentheses)  
+   • Date: <converted datetime>  
+   • Source: <source>    Category: <category>  
+   • Symbol: <symbol>    Related: <related>  
+   • Summary: <summary text>
+4. Do not use any Markdown formatting (no asterisks for bold, no square brackets for links, no backticks). Use plain text punctuation and spacing to create a clean layout.
+5. Omit any fields not listed above.
+6. Output only the formatted text—no additional commentary or explanations.
+
+Example output:
+
+1. Should You Buy, Sell or Hold Alphabet Stock Before Q1 Earnings? (https://finnhub.io/api/news?id=33ffab36c76c02df3fa5779158b7fa61f27dc57a2046fd72ab7e8fb079c78e62)  
+   Date: 2025-05-22 14:15 UTC  
+   Source: Yahoo    Category: company  
+   Symbol: ORCL    Related: ORCL  
+   Summary: GOOGL’s first-quarter 2025 results are likely to reflect strength in Generative AI, search, and cloud amid rising cloud competition and stretched valuation.
+
+2. Is Oracle Corporation (ORCL) the Cheap Blue Chip Stock to Buy According to Hedge Funds? (https://finnhub.io/api/news?id=03b67726a9be9591ce3395c35e9d70e7b9c034b85115a540ee449250f0cb1f16)  
+   Date: 2025-05-22 17:45 UTC  
+   Source: Yahoo    Category: company  
+   Symbol: ORCL    Related: ORCL  
+   Summary: We recently published a list of 10 Cheap Blue Chip Stocks to Buy According to Hedge Funds. In this article, we examine where Oracle Corporation (NYSE:ORCL) stands against other cheap blue chip stocks to buy according to hedge funds...
+
+   """
+   return sys_prompt
+
 def classify_sys_prompt():
    sys_prompt = """
       # Financial Question Analysis Prompt
