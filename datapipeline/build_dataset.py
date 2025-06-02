@@ -46,7 +46,7 @@ class RateLimiter:
         self.call_timestamps = deque()
         self.lock = threading.Lock()
         
-    def wait_if_needed(self):
+    def record_and_wait_if_needed(self):
         """ Wait if we're approaching the rate limit """
         with self.lock:
             now = datetime.now()
@@ -822,12 +822,13 @@ class BuildDataset:
         else:
             rest_url = rest_url + f'&{period}'
         
-        sanitized_url =  self.sanitize_url(rest_url)
+        # sanitized_url =  self.sanitize_url(rest_url)
+        sanitized_url =  rest_url # self.sanitize_url(rest_url)
         print(sanitized_url)
         logging.info(f"REST URL: {sanitized_url}")
 
         # ✅ Wait based on rate limiter
-        self.rate_limiter.wait_if_needed()
+        self.rate_limiter.record_and_wait_if_needed()
         tries = 0
         while tries < 3:
             try:
