@@ -6,11 +6,25 @@ views = Blueprint('views', __name__)
 
 @views.route('/', methods = ['GET', 'POST'])
 def home():
+    """Home page - AngleNexus interface with agent chat"""
+    return render_template("anglenexus.html")
+
+
+@views.route('/anglenexus', methods = ['GET'])
+def anglenexus():
+    """AngleNexus interface (alias for home)"""
+    return render_template("anglenexus.html")
+
+
+@views.route('/illumenti', methods = ['GET', 'POST'])
+def illumenti():
+    """Legacy Illumenti interface (moved from home)"""
     return render_template("index.html")
 
 
 @views.route('/search', methods = ['GET', 'POST'])
 def search():
+    """Legacy search endpoint"""
     query = None
     search_res = None
     crypto_search_res = None
@@ -32,8 +46,10 @@ def search():
     """ render the search results """ 
     return render_template("search.html", search_results=search_res, crypto_search_res=crypto_search_res)
 
+
 @views.route('/crypto', methods = ['GET', 'POST'])
 def crypto():
+    """Legacy crypto endpoint"""
     query = request.form.get('query')
     search_res = None
     if query:
@@ -43,11 +59,15 @@ def crypto():
     """ render the search results """
     return render_template("home.html", search_results=search_res)
 
+
 @views.route('/privacy-policy', methods = ['GET'])
 def privacy_policy():
+    """Privacy policy page"""
     return render_template("privacy.html")
+
 
 @views.errorhandler(404)
 def not_found(e):
-  return render_template("404.html")
+    """404 error handler"""
+    return render_template("404.html")
   
