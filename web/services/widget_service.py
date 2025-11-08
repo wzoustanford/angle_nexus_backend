@@ -7,7 +7,7 @@ import copy
 from typing import Dict, List, Any, Tuple
 from ..logging_config import logger
 from ..prompts.prompts import widget_sys_prompt
-from ..apis.reasoning import ReasoningChatClient
+from ..clients.reasoning import ReasoningChatClient
 from .dynamo_service import convert_decimals
 from .classification_service import parse_json_from_text
 

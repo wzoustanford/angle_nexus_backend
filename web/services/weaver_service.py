@@ -8,8 +8,8 @@ from typing import Dict, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..logging_config import logger
 from ..prompts.prompts import q_analysis_sys_prompt, finapis_details, combine_results_sys_promt
-from ..apis.reasoning import ReasoningChatClient
-from ..apis.fmp_api import get_finance_api_data
+from ..clients.reasoning import ReasoningChatClient
+from ..clients.fmp_api import get_finance_api_data
 from ..utils.util import format_conversation
 
 

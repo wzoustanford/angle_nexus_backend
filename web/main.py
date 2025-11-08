@@ -11,9 +11,9 @@ from .logging_config import logger
 from .config import Config
 from .utils.util import *
 from .prompts.prompts import *
-from .apis.fmp_api import get_finance_api_data
+from .clients.fmp_api import get_finance_api_data
 from .models.model import ChatRequest
-from .apis.reasoning import ReasoningChatClient
+from .clients.reasoning import ReasoningChatClient
 from .services import process_chat_request, process_weaver_request, convert_decimals
 from .services.classification_service import parse_json_from_text
 

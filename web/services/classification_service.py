@@ -7,7 +7,7 @@ from datetime import date
 from typing import Dict, List, Tuple, Optional
 from ..logging_config import logger
 from ..prompts.prompts import classify_sys_prompt
-from ..apis.reasoning import ReasoningChatClient
+from ..clients.reasoning import ReasoningChatClient
 
 
 def parse_json_from_text(text: str) -> Optional[Dict]:

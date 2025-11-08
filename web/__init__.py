@@ -6,7 +6,7 @@ from .logging_config import logger
 from .config import get_config
 from .extensions import iSearch, iCryptoSearch, init_search_indexes
 from .middleware import init_cors, init_error_handlers
-from .api import register_blueprints
+from .routes import register_blueprints
 
 # Download the NLTK stopwords
 nltk.download("stopwords")
