@@ -14,9 +14,13 @@ from .prompts.prompts import *
 from .apis.fmp_api import RateLimiter, get_finance_api_data
 from .models.model import ChatRequest
 from .apis.reasoning import ReasoningChatClient
+from .routes.subscription_routes import subscription_bp
 
 
 app = create_app()
+
+# Register subscription routes
+app.register_blueprint(subscription_bp)
 
 model = "o3-mini"  # Options: "o3-mini", "deepseek-reasoner"
 chat_client = ReasoningChatClient(model=model)
