@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AngleNexus - Foundational RL on Scalable AI Infrastructure</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anglenexus.css') }}">
+  </head>
+  <body>
+    <!-- Animated Background -->
+    <div class="bg-animation"></div>
+
+    <!-- Simple particles -->
+    <div class="particle" style="width: 3px; height: 3px; left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="width: 2px; height: 2px; left: 20%; animation-delay: 2s;"></div>
+    <div class="particle" style="width: 4px; height: 4px; left: 30%; animation-delay: 4s;"></div>
+    <div class="particle" style="width: 3px; height: 3px; left: 40%; animation-delay: 6s;"></div>
+    <div class="particle" style="width: 2px; height: 2px; left: 50%; animation-delay: 8s;"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+      <div class="nav-container">
+        <div class="logo">AngleNexus</div>
+        <ul class="nav-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#agents">Agents</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#research">Research</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Foundational RL on <span class="gradient-text">Scalable AI Infrastructure</span></h1>
+          <p>Building Reinforcement Learning Foundational Models and Agents that take real-world actions and learn from experience.</p>
+          <div class="cta-buttons">
+            <a href="#agents" class="btn btn-primary">Explore Agents</a>
+            <a href="#about" class="btn btn-secondary">Learn More</a>
+          </div>
+        </div>
+        <!-- <div class="hero-visual">
+          <div class="glass-card">
+            <div class="card-icon">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <path d="M20 5L25 15H35L27 22L30 32L20 26L10 32L13 22L5 15H15L20 5Z" fill="white"/>
+              </svg>
+            </div>
+            <h3>AI Agent Platform</h3>
+            <p>Powering the next generation of intelligent systems with reinforcement learning at scale.</p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+              <div style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <div style="font-size: 24px; font-weight: bold; color: #667eea;">4</div>
+                <div style="font-size: 12px; opacity: 0.7;">Specialized Agents</div>
+              </div>
+              <div style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <div style="font-size: 24px; font-weight: bold; color: #f5576c;">∞</div>
+                <div style="font-size: 12px; opacity: 0.7;">Action Spaces</div>
+              </div>
+            </div>
+          </div>
+        </div> -->
+        	<div class="hero-visual">
+	  <div class="glass-card">
+	    <div class="card-icon">🧠</div>
+	    <h3>Next-Gen AI Platform</h3>
+	    <p>Nexus is a high-velocity application operating system assisted by RL agents, empowering AI builders to create applications with real-world impact.</p>
+
+	    <!-- Video Section -->
+	    <div style="margin-top: 30px; margin-bottom: 20px;">
+	      <div style="position: relative; border-radius: 15px; overflow: hidden; background: #000; height: 315px; display: flex; align-items: center; justify-content: center;">
+		<img
+		  src="https://ai.stanford.edu/~wzou/gameplay.gif"
+		  alt="RL Agent Playing Atari"
+		  style="max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; border-radius: 15px;"
+		  />
+		<div style="position: absolute; top: 10px; right: 10px; display: flex; align-items: center; background: rgba(0, 0, 0, 0.7); padding: 5px 15px; border-radius: 20px;">
+		  <div class="loading-ring" style="width: 12px; height: 12px; border-width: 2px;"></div>
+		  <span style="margin-left: 8px; color: var(--text-secondary); font-size: 14px;">Live System</span>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </section>
+    
+    <!-- Agents Section -->
+    <section id="agents">
+      <div class="section-header">
+        <h2>Meet Our <span class="gradient-text">Intelligent Agents</span></h2>
+        <p>Specialized AI agents optimized for real-world performance</p>
+      </div>
+
+      <div class="agents-container">
+        <!-- Daimon Agent -->
+        <div class="agent-card">
+          <div class="daimon-header">
+            <h3 class="agent-name">Daimon <span class="greek-subtitle">δαίμων</span></h3>
+            <p style="margin-bottom: 20px;">The financial reasoning agent. Daimon analyzes market data, interprets financial queries, and provides comprehensive investment insights powered by reinforcement learning.</p>
+            <button id="daimonBtn" class="btn btn-secondary glow" onclick="toggleDaimon()">
+              <span>Chat with Daimon</span>
+              <span id="daimonArr" style="margin-left: 8px; transition: transform 0.3s;">▼</span>
+            </button>
+          </div>
+
+          <div id="daimonBox">
+            <div class="d-chat-inner">
+              <div class="d-chat-header">
+                <strong>Daimon</strong>
+                <div class="d-status">
+                  <div style="width:6px;height:6px;border-radius:50%;background:#4ade80;margin-right:6px;"></div>
+                  <span style="font-size:11px;opacity:0.8;">Online</span>
+                </div>
+              </div>
+              <div id="daimonMsgs">
+                <div class="d-welcome">
+                  <h4>Welcome to Daimon</h4>
+                  <p>Ask me anything about financial markets, stocks, or investment strategies.</p>
+                </div>
+              </div>
+              <div class="d-input-wrap">
+                <input type="text" id="daimonIn" placeholder="Ask about stocks, markets..." onkeypress="if(event.key==='Enter') sendDaimon()">
+                <button id="daimonSnd" onclick="sendDaimon()">➤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avvocato Agent -->
+        <div class="agent-card">
+          <div class="avvocato-header">
+            <h3 class="agent-name">Avvocato <span class="legal-subtitle">Legal Counsel</span></h3>
+            <p style="margin-bottom: 20px;">The legal and compliance agent. Avvocato ensures regulatory adherence, interprets financial law, and provides guidance on compliance matters.</p>
+            <button id="avvocatoBtn" class="btn btn-secondary glow" onclick="toggleAvvocato()">
+              <span>Consult Avvocato</span>
+              <span id="avvocatoArr" style="margin-left: 8px; transition: transform 0.3s;">▼</span>
+            </button>
+          </div>
+
+          <div id="avvocatoBox">
+            <div class="a-chat-inner">
+              <div class="a-chat-header">
+                <strong>Avvocato</strong>
+                <div class="a-status">
+                  <div style="width:6px;height:6px;border-radius:50%;background:#4ade80;margin-right:6px;"></div>
+                  <span style="font-size:11px;opacity:0.8;">Online</span>
+                </div>
+              </div>
+              <div id="avvocatoMsgs">
+                <div class="a-welcome">
+                  <h4>Welcome to Avvocato</h4>
+                  <p>Ask me about legal compliance, regulations, or financial law.</p>
+                </div>
+              </div>
+              <div class="a-input-wrap">
+                <input type="text" id="avvocatoIn" placeholder="Ask about legal matters..." onkeypress="if(event.key==='Enter') sendAvvocato()">
+                <button id="avvocatoSnd" onclick="sendAvvocato()">➤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sophon Agent -->
+        <div class="agent-card">
+          <h3 class="agent-name">Sophon</h3>
+          <p style="margin-bottom: 20px;">The interface agent that determines what users see. Sophon discovers, shows interactive interfaces, runs programs, and adapts to user preferences.</p>
+          <p>When users input prompts, Sophon interprets requests and orchestrates relevant UX and backend components for comprehensive responses - from interactive stock charts to document viewers.</p>
+          <div class="btn btn-secondary glow" style="margin-top: 30px; width: fit-content;">
+            Coming Soon
+          </div>
+        </div>
+
+        <!-- Weaver Agent -->
+        <div class="agent-card">
+          <div class="weaver-header">
+            <div class="weaver-title-section">
+              <h3 class="agent-name">Weaver</h3>
+              <!-- <p class="weaver-subtitle">information gatherer</p> -->
+              <p style="max-width: 600px;">Your intelligent research assistant that weaves connections between questions and real-time data sources. Lightning-fast and nimble, Weaver finds user-customized, suitable, and current information tailored to your needs.</p>
+            </div>
+            <button id="weaverBtn" onclick="toggleWeaver()">
+              Try Weaver
+              <svg id="weaverArr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          <div id="weaverBox">
+            <div class="w-chat-inner">
+              <div class="w-chat-header">
+                <div class="w-status"></div>
+                <span style="font-weight: 600; font-size: 1.1em;">Weaver Interface</span>
+                <span style="margin-left: auto; font-size: 14px; opacity: 0.9;">Research Assistant Active</span>
+                <button onclick="clearWeaverHistory()" style="background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:4px;transition:all 0.2s;margin-left:15px;" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='rgba(255,255,255,0.6)'" title="Clear chat history">
+                  🗑️ Clear
+                </button>
+              </div>
+              <div id="weaverMsgs">
+                <div class="w-welcome">
+                  <h4 style="margin-bottom: 10px; font-size: 1.2em;">Welcome to Weaver</h4>
+                  <p style="color: #999;">I gather and synthesize information from multiple sources. Ask me to research companies, analyze market data, or compile comprehensive reports on any topic.</p>
+                </div>
+              </div>
+              <div class="w-input-wrap">
+                <input type="text" id="weaverIn" placeholder="Ask about any topic..." onkeypress="if(event.key==='Enter')sendWeaver()">
+                <button id="weaverSnd" onclick="sendWeaver()">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about">
+      <div class="section-header">
+        <h2>Why <span class="gradient-text">Reinforcement Learning</span>?</h2>
+        <p>Going beyond traditional AI to create systems that truly understand consequences and rewards</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Real-World Actions</h3>
+          <p>Unlike generative LLMs, our RL models account for penalties and rewards of taking real actions, significantly reducing hallucinations and improving decision quality.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🚀</div>
+          <h3>Unified AI Infrastructure</h3>
+          <p>A comprehensive platform that unifies RL systems, addressing the fragmentation that even major AI labs face with environment states, action spaces, and reward models.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>High-Calibre Decisions</h3>
+          <p>Each RL decision carries higher value than text generation. Our engineering excellence and efficient algorithms capture critical signals for production reliability.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Research Section -->
+    <section id="research">
+      <div class="section-header">
+        <h2>Cutting-Edge <span class="gradient-text">Research</span></h2>
+        <p>Advancing the frontier of Reinforcement Learning with breakthrough algorithms</p>
+      </div>
+
+      <div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+        <h3 style="font-size: 28px; margin-bottom: 20px;">Neural Inhibition Improves Dynamic Routing and Mixture of Experts</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 30px;">We're actively working on research to push the boundaries of RL algorithms. Our focus areas include:</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+          <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+            <h4>Model-Based RL</h4>
+          </div>
+          <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+            <h4>Multi-Agent Systems</h4>
+          </div>
+          <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+            <h4>Safe Exploration</h4>
+          </div>
+          <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+            <h4>Transfer Learning</h4>
+          </div>
+          <div style="padding: 20px; background: rgba(118, 75, 162, 0.1); border-radius: 15px;">
+            <h4>Offline RL</h4>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="logo" style="margin-bottom: 20px;">AngleNexus</div>
+        <p style="color: var(--text-secondary);">Building the next generation of intelligent systems for the next 5-10 years</p>
+        <p style="color: var(--text-secondary); margin-top: 30px;">© 2024 AngleNexus. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/anglenexus.js') }}"></script>
+  </body>
+</html>
