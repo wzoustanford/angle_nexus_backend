@@ -1,7 +1,8 @@
 version: '3.8'
 services:
   angle_app:
-    build: .  
+    build: .
+    env_file: .env 
     expose:
       - "5001"         
     networks:

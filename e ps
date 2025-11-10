@@ -1,0 +1,24 @@
+[0;1;32m●[0m docker.service - Docker Application Container Engine
+     Loaded: loaded (]8;;file://ip-172-31-34-33/usr/lib/systemd/system/docker.service/usr/lib/systemd/system/docker.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Sat 2025-11-08 11:00:09 UTC; 2 days ago
+TriggeredBy: [0;1;32m●[0m docker.socket
+       Docs: ]8;;https://docs.docker.comhttps://docs.docker.com]8;;
+   Main PID: 957412 (dockerd)
+      Tasks: 26
+     Memory: 147.7M (peak: 159.8M)
+        CPU: 1min 23.904s
+     CGroup: /system.slice/docker.service
+             ├─[0;38;5;245m957412 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock[0m
+             ├─[0;38;5;245m957842 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 80 -container-ip 172.18.0.3 -container-port 80 -use-listen-fd[0m
+             └─[0;38;5;245m957847 /usr/bin/docker-proxy -proto tcp -host-ip :: -host-port 80 -container-ip 172.18.0.3 -container-port 80 -use-listen-fd[0m
+
+Nov 08 11:00:09 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:09.407757226Z" level=info msg="Initializing buildkit"
+Nov 08 11:00:09 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:09.491713254Z" level=info msg="Completed buildkit initialization"
+Nov 08 11:00:09 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:09.500904678Z" level=info msg="Daemon has completed initialization"
+Nov 08 11:00:09 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:09.500956227Z" level=info msg="API listen on /run/docker.sock"
+Nov 08 11:00:09 ip-172-31-34-33 systemd[1]: Started docker.service - Docker Application Container Engine.
+Nov 08 11:00:09 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:09.698714114Z" level=info msg="No non-localhost DNS nameservers are left in resolv.conf. Using default external servers"
+Nov 08 11:00:09 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:09.925509535Z" level=info msg="No non-localhost DNS nameservers are left in resolv.conf. Using default external servers"
+Nov 08 11:00:12 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:00:12.286313470Z" level=info msg="ignoring event" container=6ffef17e040b9eca4a85b15732c77eb654979c252862c9a52fdd4145f27f5c8f module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Nov 08 11:09:23 ip-172-31-34-33 dockerd[957412]: 2025/11/08 11:09:23 http2: server: error reading preface from client @: read unix /run/docker.sock->@: read: connection reset by peer
+Nov 08 11:09:26 ip-172-31-34-33 dockerd[957412]: time="2025-11-08T11:09:26.856625675Z" level=info msg="No non-localhost DNS nameservers are left in resolv.conf. Using default external servers"
