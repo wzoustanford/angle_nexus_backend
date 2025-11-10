@@ -22,6 +22,9 @@ COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
+# Download NLTK data (stopwords required by illumenti_search.py)
+RUN python -c "import nltk; nltk.download('stopwords', download_dir='/usr/local/nltk_data')"
+
 # Copy project files
 COPY . .
 
