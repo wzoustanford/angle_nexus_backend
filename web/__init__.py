@@ -1,7 +1,8 @@
 import os
+from dotenv import load_dotenv
+from flask import Flask
 import nltk
 from nltk.corpus import stopwords
-from flask import Flask
 from .logging_config import logger
 from .config import get_config
 from .extensions import iSearch, iCryptoSearch, init_search_indexes
