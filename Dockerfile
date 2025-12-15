@@ -35,4 +35,5 @@ ENV FLASK_APP=web/main.py
 EXPOSE 5001
 
 # Run the application
-CMD ["gunicorn", "--workers=3", "--bind=0.0.0.0:5001", "web.main:app"]
+# Increased timeout to 120s to handle slow API responses with rate limiting
+CMD ["gunicorn", "--workers=3", "--timeout=120", "--bind=0.0.0.0:5001", "web.main:app"]
