@@ -2,6 +2,7 @@
 Subscription Routes
 Flask endpoints for subscription management
 """
+import os
 from flask import Blueprint, request, jsonify
 from pydantic import ValidationError
 from ..logging_config import logger
@@ -143,6 +144,9 @@ def get_subscription_status():
     - platform: ios or android (optional, checks both if not specified)
     """
     try:
+        # TEST MODE: Return unlimited chats if enabled
+        test_mode = os.getenv('SUBSCRIPTION_TEST_MODE', 'false').lower() == 'true'
+        
         user_id = request.args.get('user_id')
         if not user_id:
             return jsonify({
@@ -150,6 +154,33 @@ def get_subscription_status():
                 'message': 'user_id parameter required',
                 'error_code': 'MISSING_PARAMETER'
             }), 400
+        
+        if test_mode:
+            logger.info(f"🧪 TEST MODE: Returning unlimited subscription for user_id={user_id}")
+            from ..models.subscription_model import SubscriptionStatusResponse, SubscriptionTier, SubscriptionStatus, SubscriptionFeatures
+            test_status = SubscriptionStatusResponse(
+                user_id=user_id,
+                subscription_tier=SubscriptionTier.FREE,
+                status=SubscriptionStatus.ACTIVE,
+                is_active=True,
+                is_trial=False,
+                auto_renew_status=False,
+                chat_count_today=0,
+                remaining_chats=1000000,
+                chat_limit_reached=False,
+                features=SubscriptionFeatures(
+                    tier=SubscriptionTier.FREE,
+                    unlimited_chat=True,
+                    daily_chat_limit=1000000,
+                    advanced_search=False,
+                    full_historical_data=False,
+                    priority_support=False
+                )
+            )
+            return jsonify({
+                'success': True,
+                'subscription': test_status.dict()
+            }), 200
         
         platform_str = request.args.get('platform')
         platform = None
@@ -297,6 +328,9 @@ def increment_chat():
     }
     """
     try:
+        # TEST MODE: Always allow chats if enabled
+        test_mode = os.getenv('SUBSCRIPTION_TEST_MODE', 'false').lower() == 'true'
+        
         request_data = request.get_json()
         if not request_data:
             return jsonify({
@@ -310,6 +344,34 @@ def increment_chat():
                 'success': False,
                 'message': 'user_id required'
             }), 400
+        
+        if test_mode:
+            logger.info(f"🧪 TEST MODE: Allowing unlimited chat for user_id={user_id}")
+            from ..models.subscription_model import SubscriptionStatusResponse, SubscriptionTier, SubscriptionStatus, SubscriptionFeatures
+            test_status = SubscriptionStatusResponse(
+                user_id=user_id,
+                subscription_tier=SubscriptionTier.FREE,
+                status=SubscriptionStatus.ACTIVE,
+                is_active=True,
+                is_trial=False,
+                auto_renew_status=False,
+                chat_count_today=0,
+                remaining_chats=1000000,
+                chat_limit_reached=False,
+                features=SubscriptionFeatures(
+                    tier=SubscriptionTier.FREE,
+                    unlimited_chat=True,
+                    daily_chat_limit=1000000,
+                    advanced_search=False,
+                    full_historical_data=False,
+                    priority_support=False
+                )
+            )
+            return jsonify({
+                'success': True,
+                'message': 'Test mode - unlimited chats',
+                'subscription': test_status.dict()
+            }), 200
         
         logger.info(f"📊 INCREMENT REQUEST: user_id={user_id}")
         

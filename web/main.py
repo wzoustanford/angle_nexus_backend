@@ -16,6 +16,7 @@ from .models.model import ChatRequest
 from .clients.reasoning import ReasoningChatClient
 from .routes.subscription_routes import subscription_bp
 from .services.weaver_service import process_weaver_request
+from .services.chat_service import process_chat_request
 
 
 app = create_app()
