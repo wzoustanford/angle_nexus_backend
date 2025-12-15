@@ -15,7 +15,6 @@ env_angle/
 angle_env/
 .DS_Store
 *.log
-*.csv
 aivenv
 ticker_exchange.csv
 
