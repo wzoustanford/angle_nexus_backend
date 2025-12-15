@@ -9,8 +9,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..logging_config import logger
 from ..prompts.prompts import q_analysis_sys_prompt, finapis_details, combine_results_sys_promt
 from ..clients.reasoning import ReasoningChatClient
-from ..clients.fmp_api import get_finance_api_data
+from ..clients.fmp_api import get_finance_api_data, RateLimiter
 from ..utils.util import format_conversation
+
+# Create a module-level rate limiter for API calls
+_rate_limiter = RateLimiter(calls_per_minute=280)
 
 
 def fetch_data(key: str, api_url: str) -> tuple:
@@ -25,7 +28,7 @@ def fetch_data(key: str, api_url: str) -> tuple:
         Tuple of (key, response)
     """
     logger.debug("Fetching data for key='%s' from URL='%s'", key, api_url)
-    response = get_finance_api_data(api_url)
+    response = get_finance_api_data(api_url, _rate_limiter)
     return key, response
 
 

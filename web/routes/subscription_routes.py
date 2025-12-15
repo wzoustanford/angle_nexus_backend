@@ -11,7 +11,7 @@ from ..models.subscription_model import (
     Platform
 )
 from ..services.subscription_service import SubscriptionService
-from ..apis.subscription_api import ReceiptVerificationAPI
+from ..clients.subscription_api import ReceiptVerificationAPI
 
 
 subscription_bp = Blueprint('subscription', __name__, url_prefix='/api/subscription')

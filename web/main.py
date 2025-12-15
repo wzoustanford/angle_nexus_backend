@@ -11,10 +11,11 @@ from .logging_config import logger
 from .config import Config
 from .utils.util import *
 from .prompts.prompts import *
-from .apis.fmp_api import RateLimiter, get_finance_api_data
+from .clients.fmp_api import RateLimiter, get_finance_api_data
 from .models.model import ChatRequest
-from .apis.reasoning import ReasoningChatClient
+from .clients.reasoning import ReasoningChatClient
 from .routes.subscription_routes import subscription_bp
+from .services.weaver_service import process_weaver_request
 
 
 app = create_app()
