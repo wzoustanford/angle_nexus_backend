@@ -40,7 +40,7 @@ flask run
 4. Start production server
 
 ```
-gunicorn web.main:app -b 0.0.0.0:80 -w 4 -t 300
+gunicorn web.main:app -b 0.0.0.0:80 -w 1 -t 300
 ```
 
 ## Directory Structure

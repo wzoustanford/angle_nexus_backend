@@ -11,16 +11,18 @@ from .logging_config import logger
 from .config import Config
 from .utils.util import *
 from .prompts.prompts import *
-from .clients.fmp_api import get_finance_api_data
+from .apis.fmp_api import RateLimiter, get_finance_api_data
 from .models.model import ChatRequest
-from .clients.reasoning import ReasoningChatClient
-from .services import process_chat_request, process_weaver_request, convert_decimals
-from .services.classification_service import parse_json_from_text
+from .apis.reasoning import ReasoningChatClient
+from .routes.subscription_routes import subscription_bp
+
 
 app = create_app()
 
-# Legacy configurations (kept for backward compatibility)
-model = Config.DEFAULT_MODEL
+# Register subscription routes
+app.register_blueprint(subscription_bp)
+
+model = "o3-mini"  # Options: "o3-mini", "deepseek-reasoner"
 chat_client = ReasoningChatClient(model=model)
 ALLOWED_MODELS = Config.ALLOWED_MODELS
 
@@ -75,7 +77,8 @@ def fetch_data(key, api_url):
     Note: This is now also available in services.weaver_service
     """
     logger.debug("Fetching data for key='%s' from URL='%s'", key, api_url)
-    response = get_finance_api_data(api_url)
+    rate_limiter = RateLimiter(calls_per_minute=280) 
+    response = get_finance_api_data(api_url, rate_limiter)
     return key, response
 
 
