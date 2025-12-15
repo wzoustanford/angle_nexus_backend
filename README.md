@@ -1,8 +1,6 @@
 # angle
 code base for angle
 
-# Illumenti Backend
-
 ## Setup in local
 
 1. create python environment
