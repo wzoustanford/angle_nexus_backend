@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask
-import nltk
-from nltk.corpus import stopwords
+
+#from nltk.corpus import stopwords
 from .logging_config import logger
 from .config import get_config
 from .extensions import iSearch, iCryptoSearch, init_search_indexes
@@ -10,7 +10,7 @@ from .middleware import init_cors, init_error_handlers
 from .routes import register_blueprints
 
 # Download the NLTK stopwords
-nltk.download("stopwords")
+#nltk.download("stopwords")
 
 # Setup shared resources
 stop = set(stopwords.words("english"))
