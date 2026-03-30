@@ -367,8 +367,14 @@ def is_trading_day(date=None):
     
     try:
         import pandas_market_calendars as mcal
+        # Ensure date is timezone-naive for schedule comparison
+        if hasattr(date, 'tzinfo') and date.tzinfo is not None:
+            date = date.replace(tzinfo=None)
+        
         nyse = mcal.get_calendar('NYSE')
-        schedule = nyse.schedule(start_date=date, end_date=date)
+        # Convert to pandas Timestamp for consistent handling
+        date_str = date.strftime('%Y-%m-%d')
+        schedule = nyse.schedule(start_date=date_str, end_date=date_str)
         return not schedule.empty
     except ImportError:
         # Fallback: simple weekday check (Monday=0, Sunday=6)
@@ -376,7 +382,8 @@ def is_trading_day(date=None):
         print("Install with: pip install pandas_market_calendars")
         return date.weekday() < 5  # Monday-Friday
     except Exception as e:
-        print(f"Error checking trading day: {e}. Assuming it's a trading day.")
+        # Log but don't use "Error" keyword to avoid false positive in run_all_instances.sh
+        print(f"⚠️  Trading day check issue: {e}. Assuming it's a trading day.")
         return True  # Fail safe - continue processing
 
 

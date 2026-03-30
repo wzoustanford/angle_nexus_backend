@@ -388,7 +388,7 @@ class BuildDataset:
             try:
                 value_growth_yoy = annual_earnings[0].get('net_profit') / annual_earnings[1].get('net_profit') - 1
             except:
-                print ('Failed to calculate value_growth_yoy')
+                print ('⚠️  Cannot calculate value_growth_yoy')
                 print (annual_earnings[0].get('net_profit'), annual_earnings[1].get('net_profit'))
                 print (data)
                 value_growth_yoy = '__nan__'

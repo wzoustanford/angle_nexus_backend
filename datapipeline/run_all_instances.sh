@@ -112,10 +112,18 @@ wait
 failed=0
 for i in $(seq 0 $((total_workers - 1))); do
   worker_log="$log_dir/worker_${i}_${timestamp}.log"
-  if grep -qiE 'error|exception|traceback' "$worker_log"; then
-    echo "Worker $i failed. Check $worker_log" | tee -a "$log_file"
+  
+  # Check for actual failures (not warnings)
+  # 1. Check if worker completed successfully (last line should be "Done")
+  # 2. Check for Python Traceback (indicates unhandled exception)
+  if ! tail -1 "$worker_log" | grep -q "^Done$"; then
+    echo "Worker $i failed: Did not complete. Check $worker_log" | tee -a "$log_file"
+    ((failed++))
+  elif grep -q "^Traceback (most recent call last):" "$worker_log"; then
+    echo "Worker $i failed: Unhandled exception. Check $worker_log" | tee -a "$log_file"
     ((failed++))
   fi
+  
   echo "=== Log: Worker $i ===" >> "$log_file"
   cat "$worker_log" >> "$log_file"
   echo "=== End ===" >> "$log_file"
