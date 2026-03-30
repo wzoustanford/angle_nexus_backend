@@ -14,6 +14,7 @@ import argparse
 from build_dataset import BuildDataset 
 from ticker_list import TICKERS 
 from datetime import datetime
+from dynabodb_funcs import is_trading_day
 
 bd = BuildDataset()  
 small_ticker_list = TICKERS[:5] 
@@ -68,6 +69,19 @@ def build_tables_production(worker_index, num_splits):
 #test_build_tables()
 
 if __name__ == '__main__':
+    
+    # BANDWIDTH OPTIMIZATION: Skip processing on non-trading days
+    if not is_trading_day():
+        print("=" * 60)
+        print("NON-TRADING DAY DETECTED")
+        print("Today is not a US stock market trading day (weekend/holiday).")
+        print("Skipping data pipeline execution to save bandwidth and API calls.")
+        print("=" * 60)
+        exit(0)
+    
+    print("=" * 60)
+    print("TRADING DAY CONFIRMED - Proceeding with data pipeline")
+    print("=" * 60)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-wi', required=True,
